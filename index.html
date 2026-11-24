@@ -530,4 +530,432 @@
     }
 
     function atualizar() {
-      atual
+      atualizarErupcaoVulcao();
+      if (jogoEncerrado) return;
+
+      if (jogador.invencivel > 0) jogador.invencivel--;
+      if (tempoAviso > 0) tempoAviso--;
+      if (tremorTela > 0) tremorTela--;
+
+      // --- Movimento Horizontal do Carro Monstro ---
+      jogador.velX = 0;
+      if (teclas.esquerda) {
+        jogador.velX = -CONFIG.velocidadeCarro;
+        jogador.direcao = -1;
+      }
+      if (teclas.direita) {
+        jogador.velX = CONFIG.velocidadeCarro;
+        jogador.direcao = 1;
+      }
+
+      jogador.x += jogador.velX;
+      jogador.anguloRoda += jogador.velX * 0.08;
+
+      // Limites da pista
+      if (jogador.x < 0) jogador.x = 0;
+      if (jogador.x + jogador.largura > CONFIG.larguraMundo) {
+        jogador.x = CONFIG.larguraMundo - jogador.largura;
+      }
+
+      // Colisão lateral com plataformas
+      for (const plat of plataformas) {
+        if (verificarColisao(jogador, plat)) {
+          if (jogador.velX > 0) jogador.x = plat.x - jogador.largura;
+          if (jogador.velX < 0) jogador.x = plat.x + plat.largura;
+        }
+      }
+
+      // --- Movimento Vertical e Gravidade ---
+      jogador.velY += CONFIG.gravidade;
+      jogador.noChao = false;
+      jogador.y += jogador.velY;
+
+      for (const plat of plataformas) {
+        if (verificarColisao(jogador, plat)) {
+          if (jogador.velY > 0) {
+            jogador.y = plat.y - jogador.altura;
+            jogador.velY = 0;
+            jogador.noChao = true;
+          } else if (jogador.velY < 0) {
+            jogador.y = plat.y + plat.altura;
+            jogador.velY = 0;
+          }
+        }
+      }
+
+      // Atualiza Câmera (mantém o carro visível à esquerda da tela)
+      cameraX = jogador.x - 240;
+      if (cameraX < 0) cameraX = 0;
+      if (cameraX > CONFIG.larguraMundo - canvas.width) {
+        cameraX = CONFIG.larguraMundo - canvas.width;
+      }
+
+      // --- Coleta das Barras de Ouro ---
+      for (const barra of barrasOuro) {
+        if (barra.coletada) continue;
+        const areaBarra = { x: barra.x, y: barra.y, largura: 30, altura: 18 };
+        if (verificarColisao(jogador, areaBarra)) {
+          barra.coletada = true;
+          pontos += CONFIG.pontosPorBarraOuro;
+          atualizarHUD();
+        }
+      }
+
+      // --- Carros Monstros Vermelhos (Inimigos) ---
+      for (const inimigo of inimigos) {
+        if (!inimigo.vivo) continue;
+
+        inimigo.x += inimigo.velX;
+        inimigo.anguloRoda += inimigo.velX * 0.08;
+
+        if (inimigo.x <= inimigo.minX || inimigo.x + inimigo.largura >= inimigo.maxX) {
+          inimigo.velX *= -1;
+        }
+
+        if (verificarColisao(jogador, inimigo)) {
+          const rodasAnteriores = jogador.y + jogador.altura - jogador.velY;
+          if (jogador.velY > 0 && rodasAnteriores <= inimigo.y + inimigo.altura * 0.55) {
+            inimigo.vivo = false;
+            jogador.velY = -11;
+            tremorTela = 8;
+            pontos += CONFIG.pontosPorInimigo;
+            atualizarHUD();
+          } else {
+            sofrerDano("Bateu em um Carro Monstro Vermelho!");
+          }
+        }
+      }
+
+      // --- Perigos de Lava na Estrada ---
+      for (const lava of perigosLava) {
+        if (verificarColisao(jogador, lava)) {
+          sofrerDano("Cuidado com a lava fervente!");
+        }
+      }
+
+      // --- Carro Monstro Vilão Gigante (Chefe Final) ---
+      if (chefeVilao.vivo) {
+        if (chefeVilao.invencivel > 0) chefeVilao.invencivel--;
+
+        chefeVilao.x += chefeVilao.velX;
+        chefeVilao.anguloRoda += chefeVilao.velX * 0.04;
+        if (chefeVilao.x <= chefeVilao.minX || chefeVilao.x + chefeVilao.largura >= chefeVilao.maxX) {
+          chefeVilao.velX *= -1;
+        }
+
+        if (verificarColisao(jogador, chefeVilao)) {
+          const rodasAnteriores = jogador.y + jogador.altura - jogador.velY;
+          // Se pular no teto do Chefe Gigante
+          if (jogador.velY > 0 && rodasAnteriores <= chefeVilao.y + chefeVilao.altura * 0.45) {
+            jogador.velY = -13; // Quica bem alto
+            if (chefeVilao.invencivel === 0) {
+              chefeVilao.hp--;
+              chefeVilao.invencivel = 45;
+              tremorTela = 16;
+
+              if (chefeVilao.hp <= 0) {
+                chefeVilao.vivo = false;
+                pontos += CONFIG.pontosPorDerrotarChefe;
+                atualizarHUD();
+                mostrarAviso("BOOOOM! Você destruiu o Vilão Gigante! Cruze a chegada!");
+              } else {
+                mostrarAviso(`Acerto direto! Faltam ${chefeVilao.hp} golpes no Vilão Gigante!`);
+              }
+            }
+          } else {
+            sofrerDano("O Carro Monstro Gigante te esmagou!");
+          }
+        }
+      }
+
+      // --- Linha de Chegada ---
+      if (jogador.x + jogador.largura >= CONFIG.posicaoChegada) {
+        if (chefeVilao.vivo) {
+          jogador.x = CONFIG.posicaoChegada - jogador.largura - 5;
+          mostrarAviso("Derrote o Carro Monstro Vilão Gigante antes de cruzar!");
+        } else {
+          finalizarJogo(true);
+        }
+      }
+    }
+
+    // ========================================================================
+    // DESENHO DOS GRÁFICOS NO CANVAS
+    // ========================================================================
+    function desenharFundoVulcao() {
+      // Céu vulcânico escuro e incandescente
+      const gradCeu = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradCeu.addColorStop(0, "#0c0404");
+      gradCeu.addColorStop(0.55, "#450a0a");
+      gradCeu.addColorStop(1, "#9a3412");
+      ctx.fillStyle = gradCeu;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Montanhas vulcânicas distantes (efeito parallax lento)
+      ctx.fillStyle = "#1f0909";
+      for (let i = 0; i < 6; i++) {
+        const picoX = i * 240 - ((cameraX * 0.12) % 240);
+        ctx.beginPath();
+        ctx.moveTo(picoX - 100, 410);
+        ctx.lineTo(picoX + 70, 190);
+        ctx.lineTo(picoX + 240, 410);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // GRANDE VULCÃO PRINCIPAL JOGANDO LAVA PRA FORA (parallax suave)
+      const vx = 430 - cameraX * 0.06;
+      // Cone do vulcão
+      ctx.fillStyle = "#180808";
+      ctx.beginPath();
+      ctx.moveTo(vx - 260, 410);
+      ctx.lineTo(vx - 45, 115);
+      ctx.lineTo(vx + 45, 115);
+      ctx.lineTo(vx + 260, 410);
+      ctx.closePath();
+      ctx.fill();
+
+      // Brilho da cratera no topo
+      const brilhoCratera = ctx.createRadialGradient(vx, 115, 5, vx, 115, 75);
+      brilhoCratera.addColorStop(0, "#fef08a");
+      brilhoCratera.addColorStop(0.4, "#f97316");
+      brilhoCratera.addColorStop(1, "rgba(234, 88, 12, 0)");
+      ctx.fillStyle = brilhoCratera;
+      ctx.beginPath();
+      ctx.arc(vx, 115, 75, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Rios de lava escorrendo pela encosta do vulcão
+      ctx.strokeStyle = "#f97316";
+      ctx.lineWidth = 7;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(vx - 20, 118);
+      ctx.quadraticCurveTo(vx - 55, 220, vx - 125, 360);
+      ctx.moveTo(vx + 15, 118);
+      ctx.quadraticCurveTo(vx + 65, 210, vx + 135, 380);
+      ctx.stroke();
+
+      ctx.strokeStyle = "#facc15";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Bolas de lava sendo cuspidas pelo vulcão
+      for (const bola of bolasLava) {
+        const bx = bola.x - cameraX * 0.06;
+        ctx.fillStyle = "#facc15";
+        ctx.beginPath();
+        ctx.arc(bx, bola.y, bola.raio, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(239, 68, 68, 0.55)";
+        ctx.beginPath();
+        ctx.arc(bx, bola.y, bola.raio * 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Brasas flutuantes no ar
+      for (const brasa of brasas) {
+        ctx.fillStyle = "rgba(251, 146, 60, 0.8)";
+        ctx.beginPath();
+        ctx.arc(brasa.x, brasa.y, brasa.raio, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Função para desenhar Carros Monstros (Jogador e Inimigos Vermelhos)
+    function desenharCarroMonstro(x, y, largura, altura, corPrincipal, corDetalhe, direcao, anguloRoda) {
+      ctx.save();
+
+      // Suspensão / Amortecedores
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + 14, y + altura - 14);
+      ctx.lineTo(x + 14, y + altura - 4);
+      ctx.moveTo(x + largura - 14, y + altura - 14);
+      ctx.lineTo(x + largura - 14, y + altura - 4);
+      ctx.stroke();
+
+      // Lataria da picape Monster Truck
+      ctx.fillStyle = corPrincipal;
+      ctx.beginPath();
+      ctx.roundRect(x + 4, y + 12, largura - 8, altura - 22, 6);
+      ctx.fill();
+
+      // Cabine superior
+      const cabineX = direcao === 1 ? x + 12 : x + 20;
+      ctx.fillStyle = corPrincipal;
+      ctx.beginPath();
+      ctx.roundRect(cabineX, y + 2, largura - 32, 14, 4);
+      ctx.fill();
+
+      // Vidro da cabine
+      ctx.fillStyle = "#bae6fd";
+      const vidroX = direcao === 1 ? cabineX + (largura - 32) - 12 : cabineX + 2;
+      ctx.fillRect(vidroX, y + 4, 10, 8);
+
+      // Faixa decorativa lateral
+      ctx.fillStyle = corDetalhe;
+      ctx.fillRect(x + 8, y + 18, largura - 16, 4);
+
+      // Rodas gigantes com calotas giratórias
+      const raioRoda = 11;
+      const posRodas = [x + 14, x + largura - 14];
+      const rodaY = y + altura - 8;
+
+      for (const rx of posRodas) {
+        // Pneu
+        ctx.fillStyle = "#09090b";
+        ctx.beginPath();
+        ctx.arc(rx, rodaY, raioRoda, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Aro metálico
+        ctx.fillStyle = "#cbd5e1";
+        ctx.beginPath();
+        ctx.arc(rx, rodaY, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Raio girando para dar sensação de velocidade
+        ctx.strokeStyle = "#334155";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(rx + Math.cos(anguloRoda) * 5, rodaY + Math.sin(anguloRoda) * 5);
+        ctx.lineTo(rx - Math.cos(anguloRoda) * 5, rodaY - Math.sin(anguloRoda) * 5);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    // Função especial para desenhar o CARRO MONSTRO VILÃO GIGANTE olhando para o jogador
+    function desenharChefeVilaoGigante() {
+      if (!chefeVilao.vivo) return;
+
+      const piscando = chefeVilao.invencivel > 0 && Math.floor(chefeVilao.invencivel / 4) % 2 === 0;
+      if (piscando) return;
+
+      const { x, y, largura, altura, anguloRoda } = chefeVilao;
+
+      // Suspensão reforçada vermelha
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(x + 34, y + altura - 38);
+      ctx.lineTo(x + 34, y + altura - 14);
+      ctx.moveTo(x + largura - 34, y + altura - 38);
+      ctx.lineTo(x + largura - 34, y + altura - 14);
+      ctx.stroke();
+
+      // Chassi gigante blindado
+      ctx.fillStyle = CONFIG.corCarroVilao;
+      ctx.strokeStyle = "#dc2626";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(x + 8, y + 32, largura - 16, altura - 58, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      // Cabine monstruosa
+      ctx.fillStyle = "#27272a";
+      ctx.beginPath();
+      ctx.roundRect(x + 36, y + 6, largura - 64, 34, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // Chifres / Escapamentos flamejantes no teto
+      ctx.fillStyle = "#52525b";
+      ctx.fillRect(x + largura - 36, y - 8, 8, 22);
+      ctx.fillStyle = "#f97316";
+      ctx.beginPath();
+      ctx.arc(x + largura - 32, y - 12, 6 + Math.sin(Date.now() / 80) * 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Grade frontal com dentes metálicos afiados
+      ctx.fillStyle = "#e2e8f0";
+      for (let i = 0; i < 4; i++) {
+        const dy = y + 48 + i * 10;
+        ctx.beginPath();
+        ctx.moveTo(x + 8, dy);
+        ctx.lineTo(x - 4, dy + 4);
+        ctx.lineTo(x + 8, dy + 8);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // OLHOS GIGANTES QUE OLHAM DIRETAMENTE PARA O JOGADOR!
+      const centroJogadorX = jogador.x + jogador.largura / 2;
+      const centroJogadorY = jogador.y + jogador.altura / 2;
+
+      const olhos = [
+        { ox: x + 56, oy: y + 23 },
+        { ox: x + 84, oy: y + 23 }
+      ];
+
+      for (const olho of olhos) {
+        // Globo ocular vermelho/amarelo brilhante
+        ctx.fillStyle = "#fef08a";
+        ctx.beginPath();
+        ctx.arc(olho.ox, olho.oy, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#dc2626";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Calcula o ângulo exato entre o olho do vilão e o carro do jogador
+        const anguloOlhar = Math.atan2(centroJogadorY - olho.oy, centroJogadorX - olho.ox);
+        const pupilaX = olho.ox + Math.cos(anguloOlhar) * 4.5;
+        const pupilaY = olho.oy + Math.sin(anguloOlhar) * 4.5;
+
+        // Pupila vermelha intensa encarando o jogador
+        ctx.fillStyle = "#b91c1c";
+        ctx.beginPath();
+        ctx.arc(pupilaX, pupilaY, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Sobrancelha brava
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(x + 44, y + 12);
+      ctx.lineTo(x + 70, y + 17);
+      ctx.lineTo(x + 96, y + 12);
+      ctx.stroke();
+
+      // Rodas colossais do Vilão
+      const raioRodaGigante = 26;
+      const rodasVilao = [x + 36, x + largura - 36];
+      const rodaY = y + altura - 22;
+
+      for (const rx of rodasVilao) {
+        ctx.fillStyle = "#09090b";
+        ctx.beginPath();
+        ctx.arc(rx, rodaY, raioRodaGigante, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#dc2626";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = "#71717a";
+        ctx.beginPath();
+        ctx.arc(rx, rodaY, 11, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#18181b";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(rx + Math.cos(anguloRoda) * 11, rodaY + Math.sin(anguloRoda) * 11);
+        ctx.lineTo(rx - Math.cos(anguloRoda) * 11, rodaY - Math.sin(anguloRoda) * 11);
+        ctx.stroke();
+      }
+
+      // Barra de Vida flutuante acima do Vilão Gigante
+      const barraLargura = 120;
+      const barraX = x + (largura - barraLargura) / 2;
+      const barraY = y - 32;
+      ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+      ctx.fillRect(barraX - 2, barraY
