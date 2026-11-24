@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Need for Speed 2D - Platformer Edition</title>
+    <!-- ATUALIZADO: Novo título na aba do navegador -->
+    <title>Operação Circuito Celeste - Protótipo V-1</title>
     <style>
+        /* CORRIGIDO: O asterisco (*) aplica a regra em toda a página */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -27,10 +29,12 @@
         header {
             margin-bottom: 12px;
             text-align: center;
+            max-width: 820px;
+            padding: 0 15px;
         }
 
         h1 {
-            font-size: 2.2rem;
+            font-size: 2rem;
             letter-spacing: 3px;
             text-transform: uppercase;
             color: #45f3ff;
@@ -38,8 +42,14 @@
         }
 
         p.subtitle {
-            font-size: 0.9rem;
+            font-size: 0.92rem;
             color: #c5c6c7;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        p.subtitle strong {
+            color: #ffbd59;
         }
 
         #game-wrapper {
@@ -96,6 +106,8 @@
             border-radius: 8px;
             backdrop-filter: blur(5px);
             z-index: 10;
+            text-align: center;
+            padding: 20px;
         }
 
         #screen-overlay.hidden {
@@ -103,7 +115,7 @@
         }
 
         #overlay-title {
-            font-size: 3rem;
+            font-size: 2.8rem;
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -120,14 +132,14 @@
         }
 
         #overlay-desc {
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             color: #fff;
             margin-bottom: 25px;
         }
 
         .btn-restart {
             padding: 12px 32px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
             text-transform: uppercase;
             color: #0b0c10;
@@ -149,6 +161,8 @@
         footer {
             margin-top: 15px;
             display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 20px;
             font-size: 0.9rem;
             color: #c5c6c7;
@@ -166,9 +180,14 @@
 </head>
 <body>
 
+    <!-- ADICIONADO: Cabeçalho com a história da missão -->
     <header>
-        <h1>NEED FOR SPEED 2D</h1>
-        <p class="subtitle">Platformer Circuit - Alcance a Linha de Chegada!</p>
+        <h1>OPERAÇÃO CIRCUITO CELESTE</h1>
+        <p class="subtitle">
+            <strong>Missão:</strong> Você é o piloto de testes do <strong>Protótipo Vermelho V-1</strong>. 
+            Salte pelas pistas suspensas, colete as <strong>Células de Energia</strong> e desvie dos veículos autônomos 
+            até cruzar o Portal de Homologação!
+        </p>
     </header>
 
     <div id="game-wrapper">
@@ -178,26 +197,27 @@
         <!-- Painel de estatísticas no jogo -->
         <div id="hud">
             <div class="hud-card">
-                <span>PONTOS:</span>
+                <span>ENERGIA:</span>
                 <span id="scoreText" style="color: #ffbd59;">0</span>
             </div>
             <div class="hud-card">
-                <span>VIDAS:</span>
+                <span>INTEGRIDADE:</span>
                 <span id="livesText" style="color: #ff3366;">❤️❤️❤️</span>
             </div>
         </div>
 
-        <!-- Tela de Vitória / Derrota -->
-        <div id="screen-overlay">
-            <h2 id="overlay-title" class="win-title">VITÓRIA!</h2>
-            <p id="overlay-desc">Você completou o circuito com sucesso!</p>
-            <button class="btn-restart" onclick="restartGame()">JOGAR NOVAMENTE</button>
+        <!-- CORRIGIDO: Adicionada a classe "hidden" para iniciar oculta -->
+        <div id="screen-overlay" class="hidden">
+            <h2 id="overlay-title" class="win-title">TESTE CONCLUÍDO!</h2>
+            <p id="overlay-desc">Você homologou o Protótipo V-1 com sucesso!</p>
+            <button class="btn-restart" onclick="restartGame()">INICIAR NOVO TESTE</button>
         </div>
     </div>
 
     <footer>
-        <div><span class="key-badge">A</span> / <span class="key-badge">D</span> ou <span class="key-badge">◄</span> <span class="key-badge">►</span> Mover</div>
-        <div><span class="key-badge">ESPAÇO</span> ou <span class="key-badge">▲</span> / <span class="key-badge">W</span> Pular</div>
+        <div><span class="key-badge">A</span> / <span class="key-badge">D</span> ou <span class="key-badge">◄</span> <span class="key-badge">►</span> Acelerar / Ré</div>
+        <div><span class="key-badge">ESPAÇO</span> ou <span class="key-badge">▲</span> / <span class="key-badge">W</span> Propulsor de Salto</div>
+        <div>Equipe de Testes: <strong>Piloto V-1</strong></div>
     </footer>
 
     <script>
@@ -221,7 +241,7 @@
 
         // Câmera deslizante (Side-scroller)
         let cameraX = 0;
-        const LEVEL_WIDTH = 3200; // Tamanho total da pista
+        const LEVEL_WIDTH = 3200; // Tamanho total da pista de testes
 
         // Estado dos controles do jogador
         const keys = {
@@ -253,7 +273,7 @@
         // ENTIDADES DO JOGO
         // ==========================================
 
-        // O Jogador (Carro de Corrida 2D)
+        // O Jogador (Protótipo Vermelho V-1)
         const player = {
             x: 60,
             y: 280,
@@ -303,32 +323,31 @@
             },
 
             draw(cameraX) {
-                // Efeito piscar se estiver temporariamente imune
                 if (this.invulnerable && Math.floor(Date.now() / 100) % 2 === 0) return;
 
                 const drawX = this.x - cameraX;
                 const drawY = this.y;
 
-                // Corpo do Carro Esportivo
+                // Corpo do Protótipo Vermelho V-1
                 ctx.fillStyle = "#ff3366";
                 ctx.beginPath();
                 ctx.roundRect(drawX, drawY + 6, this.width, this.height - 6, [4]);
                 ctx.fill();
 
-                // Teto / Vidro
+                // Cabine / Vidro
                 ctx.fillStyle = "#45f3ff";
                 ctx.beginPath();
                 ctx.roundRect(drawX + 12, drawY, 22, 10, [3, 3, 0, 0]);
                 ctx.fill();
 
-                // Rodas (Esquerda / Direita)
+                // Rodas
                 ctx.fillStyle = "#111";
                 ctx.beginPath();
                 ctx.arc(drawX + 10, drawY + this.height, 6, 0, Math.PI * 2);
                 ctx.arc(drawX + this.width - 10, drawY + this.height, 6, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Detalhes das rodas (Aros)
+                // Aros das rodas
                 ctx.fillStyle = "#aaa";
                 ctx.beginPath();
                 ctx.arc(drawX + 10, drawY + this.height, 2, 0, Math.PI * 2);
@@ -341,283 +360,7 @@
             }
         };
 
-        // Estrutura das Plataformas
         let platforms = [];
         let coins = [];
         let obstacles = [];
-        let finishLine = { x: 3050, y: 0, width: 40, height: 420 };
-
-        function initLevel() {
-            // Criando Plataformas / Pistas Elevadas
-            platforms = [
-                // Asfalto principal do chão
-                { x: 0, y: 360, width: 900, height: 60 },
-                { x: 1000, y: 360, width: 800, height: 60 },
-                { x: 1900, y: 360, width: 1300, height: 60 },
-
-                // Pontes & Rampas suspensas
-                { x: 300, y: 270, width: 180, height: 18 },
-                { x: 550, y: 200, width: 200, height: 18 },
-                { x: 1100, y: 270, width: 160, height: 18 },
-                { x: 1350, y: 200, width: 180, height: 18 },
-                { x: 1600, y: 140, width: 180, height: 18 },
-                { x: 2000, y: 270, width: 220, height: 18 },
-                { x: 2350, y: 200, width: 200, height: 18 },
-                { x: 2650, y: 270, width: 250, height: 18 }
-            ];
-
-            // Criando Coletáveis (Moedas de Nitro / Pontos)
-            coins = [
-                { x: 350, y: 230, collected: false },
-                { x: 400, y: 230, collected: false },
-                { x: 600, y: 160, collected: false },
-                { x: 650, y: 160, collected: false },
-                { x: 950, y: 320, collected: false }, // Sobre o buraco
-                { x: 1150, y: 230, collected: false },
-                { x: 1400, y: 160, collected: false },
-                { x: 1680, y: 100, collected: false },
-                { x: 2050, y: 230, collected: false },
-                { x: 2120, y: 230, collected: false },
-                { x: 2400, y: 160, collected: false },
-                { x: 2750, y: 230, collected: false }
-            ];
-
-            // Criando Obstáculos (Inimigos/Carros rivais e Spikes)
-            obstacles = [
-                // Carro Rival (Patrulha)
-                { x: 450, y: 340, width: 45, height: 20, vx: 2, minX: 400, maxX: 750, type: 'car' },
-                { x: 1200, y: 340, width: 45, height: 20, vx: 2.5, minX: 1050, maxX: 1600, type: 'car' },
-                { x: 2100, y: 340, width: 45, height: 20, vx: 3, minX: 1950, maxX: 2500, type: 'car' },
-
-                // Manchas de Óleo / Obstáculos estáticos
-                { x: 600, y: 192, width: 30, height: 8, type: 'oil' },
-                { x: 1420, y: 192, width: 30, height: 8, type: 'oil' },
-                { x: 2420, y: 192, width: 30, height: 8, type: 'oil' }
-            ];
-        }
-
-        // ==========================================
-        // LÓGICA PRINCIPAL (UPDATE)
-        // ==========================================
-
-        function update() {
-            if (gameOver) return;
-
-            player.update();
-
-            // Colisão com Plataformas
-            player.grounded = false;
-            platforms.forEach(plat => {
-                if (
-                    player.x < plat.x + plat.width &&
-                    player.x + player.width > plat.x &&
-                    player.y + player.height >= plat.y &&
-                    player.y + player.height <= plat.y + plat.height + 10 &&
-                    player.vy >= 0
-                ) {
-                    player.grounded = true;
-                    player.vy = 0;
-                    player.y = plat.y - player.height;
-                }
-            });
-
-            // Queda em buracos (Fosseis da pista)
-            if (player.y > canvas.height + 50) {
-                takeDamage(true);
-            }
-
-            // Coleta de Moedas/Nitro
-            coins.forEach(coin => {
-                if (!coin.collected) {
-                    let cx = player.x + player.width / 2;
-                    let cy = player.y + player.height / 2;
-                    let dist = Math.hypot(cx - coin.x, cy - coin.y);
-
-                    if (dist < player.width / 2 + 10) {
-                        coin.collected = true;
-                        score += 50;
-                        scoreText.textContent = score;
-                    }
-                }
-            });
-
-            // Atualizar e verificar Obstáculos
-            obstacles.forEach(obs => {
-                if (obs.type === 'car') {
-                    obs.x += obs.vx;
-                    if (obs.x <= obs.minX || obs.x + obs.width >= obs.maxX) {
-                        obs.vx *= -1; // Inverte direção
-                    }
-                }
-
-                // Checagem de Colisão com o Jogador
-                if (
-                    !player.invulnerable &&
-                    player.x < obs.x + obs.width &&
-                    player.x + player.width > obs.x &&
-                    player.y < obs.y + obs.height &&
-                    player.y + player.height > obs.y
-                ) {
-                    takeDamage(false);
-                }
-            });
-
-            // Linha de Chegada (Condição de Vitória)
-            if (player.x + player.width >= finishLine.x) {
-                endGame(true);
-            }
-
-            // Atualização do acompanhamento da câmera
-            cameraX = player.x - 150;
-            if (cameraX < 0) cameraX = 0;
-            if (cameraX > LEVEL_WIDTH - canvas.width) cameraX = LEVEL_WIDTH - canvas.width;
-        }
-
-        function takeDamage(instantFall) {
-            lives--;
-            updateLivesUI();
-
-            if (lives <= 0) {
-                endGame(false);
-            } else {
-                // Respawn / Recuo do jogador
-                player.invulnerable = true;
-                player.invulnerableTimer = 90; // ~1.5 segundos de imunidade
-                player.x = Math.max(60, player.x - 150);
-                player.y = 200;
-                player.vy = 0;
-            }
-        }
-
-        function updateLivesUI() {
-            let hearts = "";
-            for (let i = 0; i < lives; i++) hearts += "❤️";
-            livesText.textContent = hearts || "💀";
-        }
-
-        function endGame(isWin) {
-            gameOver = true;
-            overlay.classList.remove("hidden");
-
-            if (isWin) {
-                overlayTitle.textContent = "VITÓRIA!";
-                overlayTitle.className = "win-title";
-                overlayDesc.textContent = `Sensacional! Pontuação final: ${score} pontos.`;
-            } else {
-                overlayTitle.textContent = "GAME OVER!";
-                overlayTitle.className = "lose-title";
-                overlayDesc.textContent = "Seu veículo foi destruído no circuito.";
-            }
-        }
-
-        function restartGame() {
-            score = 0;
-            lives = 3;
-            gameOver = false;
-            scoreText.textContent = score;
-            updateLivesUI();
-            player.reset();
-            initLevel();
-            overlay.classList.add("hidden");
-            
-            cancelAnimationFrame(animationId);
-            gameLoop();
-        }
-
-        // ==========================================
-        // RENDERIZAÇÃO GRÁFICA (DRAW)
-        // ==========================================
-
-        function draw() {
-            // Limpar Tela
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 1. Desenhar Cenário / Cidade ao Fundo (Parallax Simples)
-            ctx.fillStyle = "#152238";
-            for (let i = 0; i < 15; i++) {
-                let bgX = (i * 250) - cameraX * 0.3;
-                ctx.fillRect(bgX, 150, 120, 250);
-            }
-
-            // 2. Desenhar Plataformas / Pistas de Asfalto
-            platforms.forEach(plat => {
-                let drawX = plat.x - cameraX;
-
-                // Desenha a estrutura da pista
-                ctx.fillStyle = "#2c3e50";
-                ctx.fillRect(drawX, plat.y, plat.width, plat.height);
-
-                // Topo Amarelo (Guia de Corrida)
-                ctx.fillStyle = "#ffbd59";
-                ctx.fillRect(drawX, plat.y, plat.width, 4);
-            });
-
-            // 3. Desenhar Moedas de Nitro (Amarelo brilhante)
-            coins.forEach(coin => {
-                if (!coin.collected) {
-                    let drawX = coin.x - cameraX;
-                    ctx.beginPath();
-                    ctx.arc(drawX, coin.y, 8, 0, Math.PI * 2);
-                    ctx.fillStyle = "#ffbd59";
-                    ctx.fill();
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = "#ffbd59";
-                    ctx.closePath();
-                    ctx.shadowBlur = 0; // Reseta o brilho
-                }
-            });
-
-            // 4. Desenhar Obstáculos
-            obstacles.forEach(obs => {
-                let drawX = obs.x - cameraX;
-
-                if (obs.type === 'car') {
-                    // Carro Inimigo (Rival Roxo)
-                    ctx.fillStyle = "#9c27b0";
-                    ctx.beginPath();
-                    ctx.roundRect(drawX, obs.y, obs.width, obs.height, [3]);
-                    ctx.fill();
-
-                    // Vidro do Inimigo
-                    ctx.fillStyle = "#111";
-                    ctx.fillRect(drawX + 8, obs.y + 2, 15, 6);
-                } else if (obs.type === 'oil') {
-                    // Poça de Óleo
-                    ctx.fillStyle = "#000";
-                    ctx.beginPath();
-                    ctx.ellipse(drawX + obs.width/2, obs.y + obs.height/2, obs.width/2, obs.height/2, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            });
-
-            // 5. Linha de Chegada (Bandeira Quadriculada)
-            let finishDrawX = finishLine.x - cameraX;
-            ctx.fillStyle = "#fff";
-            ctx.fillRect(finishDrawX, 0, 20, canvas.height);
-            ctx.fillStyle = "#000";
-            for (let y = 0; y < canvas.height; y += 20) {
-                ctx.fillRect(finishDrawX + (y % 40 === 0 ? 0 : 10), y, 10, 10);
-            }
-
-            // 6. Desenhar Jogador
-            player.draw(cameraX);
-        }
-
-        // ==========================================
-        // GAME LOOP (Ciclo de Animação)
-        // ==========================================
-
-        function gameLoop() {
-            update();
-            draw();
-            if (!gameOver) {
-                animationId = requestAnimationFrame(gameLoop);
-            }
-        }
-
-        // Inicializar o primeiro jogo ao carregar
-        initLevel();
-        gameLoop();
-    </script>
-</body>
-</html>
+        let finishLine = { x
