@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Monster Truck: Fuga do Vulcão</title>
+  <title>Monster Truck: 3 Fases Épicas</title>
 
   <!-- ===================================================================== -->
   <!-- 1. ESTILOS VISUAIS DA PÁGINA (CSS)                                    -->
@@ -24,6 +24,7 @@
       justify-content: center;
       align-items: center;
       padding: 16px;
+      overflow-x: hidden;
     }
 
     .container-jogo {
@@ -40,9 +41,10 @@
       color: #fb923c;
       text-shadow: 0 0 14px rgba(234, 88, 12, 0.7);
       letter-spacing: 0.5px;
+      text-align: center;
     }
 
-    /* Barra superior com Pontos, Barras de Ouro e Vidas */
+    /* Barra superior com Fase, Pontos, Barras de Ouro e Vidas */
     .painel-status {
       width: 800px;
       max-width: 100%;
@@ -52,6 +54,7 @@
       padding: 10px 20px;
       display: flex;
       justify-content: space-between;
+      align-items: center;
       font-size: 1.05rem;
       font-weight: bold;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
@@ -73,6 +76,7 @@
       width: 100%;
       height: auto;
       background-color: #1a0707;
+      cursor: pointer;
     }
 
     /* Tela sobreposta de Vitória ou Derrota */
@@ -85,6 +89,7 @@
       align-items: center;
       text-align: center;
       padding: 20px;
+      z-index: 10;
     }
 
     .tela-final.oculto {
@@ -153,6 +158,51 @@
       padding: 8px 16px;
       border-radius: 8px;
       border: 1px solid #7c2d12;
+      text-align: center;
+    }
+
+    /* Botões táteis responsivos para dispositivos móveis */
+    .controles-touch {
+      display: none;
+      width: 100%;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .grupo-direcional {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-touch {
+      background-color: #1c1010;
+      color: #fb923c;
+      border: 2px solid #ea580c;
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .btn-touch:active {
+      background-color: #ea580c;
+      color: #ffffff;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.35rem;
+      }
+      .painel-status {
+        font-size: 0.95rem;
+        padding: 8px 12px;
+      }
+      .controles-touch {
+        display: flex;
+      }
     }
   </style>
 </head>
@@ -162,17 +212,18 @@
   <!-- 2. ESTRUTURA HTML DO JOGO                                             -->
   <!-- ===================================================================== -->
   <main class="container-jogo">
-    <!-- Título do jogo (personalize aqui!) -->
-    <h1 id="tituloJogo">🌋 Monster Truck: Fuga do Vulcão</h1>
+    <!-- Título dinâmico da fase atual -->
+    <h1 id="tituloJogo">🌋 Fase 1: Fuga do Vulcão</h1>
 
     <!-- Placar superior -->
     <header class="painel-status">
+      <div class="status-item">🏁 Fase: <span id="valorFase">1/3</span></div>
       <div class="status-item">🔥 Pontos: <span id="valorPontos">0</span></div>
-      <div class="status-item">🥇 Barras de Ouro: <span id="valorOuro">0/15</span></div>
+      <div class="status-item">🥇 Ouro: <span id="valorOuro">0/15</span></div>
       <div class="status-item">❤️ Vidas: <span id="valorVidas">3</span></div>
     </header>
 
-    <!-- Canvas + Tela de Fim de Jogo -->
+    <!-- Canvas 800x450 + Tela de Fim de Jogo -->
     <div class="area-canvas">
       <canvas id="jogoCanvas" width="800" height="450"></canvas>
 
@@ -186,13 +237,22 @@
       </div>
     </div>
 
+    <!-- Controles táteis para telas pequenas -->
+    <div class="controles-touch" aria-label="Controles na tela">
+      <div class="grupo-direcional">
+        <button id="btnEsq" class="btn-touch" type="button">◀ Ré</button>
+        <button id="btnDir" class="btn-touch" type="button">Acelerar ▶</button>
+      </div>
+      <button id="btnPular" class="btn-touch" type="button">▲ Pular</button>
+    </div>
+
     <!-- Instruções -->
     <footer class="controles-info">
       <span><strong>Acelerar / Ré:</strong> Setas ◀ ▶ ou A / D</span>
       <span>•</span>
       <span><strong>Pular:</strong> Espaço (ou W / ▲)</span>
       <span>•</span>
-      <span><strong>Missão:</strong> Esmague os carros vermelhos e derrote o Chefe Gigante no final!</span>
+      <span><strong>Missão:</strong> Esmague os carros vermelhos e pule no cristal da cabeça do Vilão Gigante no final!</span>
     </footer>
   </main>
 
@@ -213,7 +273,7 @@
       larguraMundo: 3200,       // Comprimento total da fase em pixels
       posicaoChegada: 3060,     // Posição X da linha de chegada
       vidasIniciais: 3,         // Vidas ao iniciar
-      vidaChefeInicial: 3,      // Quantos pulos no teto são necessários para vencer o Chefe
+      vidaChefeInicial: 3,      // Vida padrão de referência
 
       // Pontuação
       pontosPorBarraOuro: 100,
@@ -221,13 +281,10 @@
       pontosPorDerrotarChefe: 500,
       bonusTodasBarras: 300,
 
-      // Cores dos Carros e Cenário
+      // Cores dos Carros
       corCarroJogador: "#2563eb",   // Azul metálico
-      corDetalheJogador: "#60a5fa", // Azul claro
-      corCarroInimigo: "#dc2626",   // Vermelho
-      corCarroVilao: "#18181b",     // Preto blindado (Chefe)
-      corRocha: "#291d1e",          // Rocha vulcânica
-      corLava: "#ea580c"            // Lava brilhante
+      corDetalheJogador: "#22d3ee", // Ciano vibrante
+      corCarroInimigo: "#dc2626"    // Vermelho carmesim
     };
 
     // ========================================================================
@@ -236,9 +293,26 @@
     const canvas = document.getElementById("jogoCanvas");
     const ctx = canvas.getContext("2d");
 
+    // Garante suporte a roundRect em qualquer navegador
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+        return this;
+      };
+    }
+
     const elPontos = document.getElementById("valorPontos");
     const elOuro = document.getElementById("valorOuro");
     const elVidas = document.getElementById("valorVidas");
+    const elFase = document.getElementById("valorFase");
+    const elTituloJogo = document.getElementById("tituloJogo");
 
     const telaFinal = document.getElementById("telaFinal");
     const tituloFinal = document.getElementById("tituloFinal");
@@ -247,8 +321,10 @@
     const btnReiniciar = document.getElementById("btnReiniciar");
 
     // ========================================================================
-    // VARIÁVEIS DE ESTADO DO JOGO
+    // VARIÁVEIS DE ESTADO DO JOGO E CONFIGURAÇÃO DAS 3 FASES
     // ========================================================================
+    let faseAtual = 0; // 0 = Fase 1, 1 = Fase 2, 2 = Fase 3
+    let acaoBotaoFinal = "reiniciarFase";
     let pontos = 0;
     let vidas = CONFIG.vidasIniciais;
     let jogoEncerrado = false;
@@ -257,7 +333,169 @@
     let mensagemAviso = "";
     let tempoAviso = 0;
 
-    // Carro Monstro do Jogador
+    // Definição completa das 3 Fases e seus respectivos Vilões Gigantes
+    const FASES = [
+      {
+        titulo: "🌋 Fase 1: Fuga do Vulcão",
+        corRocha: "#291d1e",
+        corBordaPlataforma: "#ea580c",
+        corPerigo1: "#ef4444",
+        corPerigo2: "#facc15",
+        avisoPerigo: "Cuidado com a lava fervente!",
+        vilao: {
+          tipo: "lava",
+          nome: "TITÃ CIBERNÉTICO DE LAVA",
+          hp: 3,
+          corCorpo: "#18181b",
+          corBorda: "#ea580c",
+          corDetalhe: "#f97316",
+          corNucleo: "#facc15",
+          corCristal: "#22d3ee"
+        },
+        plataformas: [
+          { x: 0,    y: 410, largura: 3200, altura: 40 },
+          { x: 260,  y: 320, largura: 170,  altura: 20 },
+          { x: 540,  y: 255, largura: 170,  altura: 20 },
+          { x: 860,  y: 315, largura: 190,  altura: 20 },
+          { x: 1180, y: 245, largura: 180,  altura: 20 },
+          { x: 1520, y: 310, largura: 200,  altura: 20 },
+          { x: 1850, y: 240, largura: 180,  altura: 20 },
+          { x: 2180, y: 305, largura: 190,  altura: 20 },
+          { x: 2500, y: 255, largura: 190,  altura: 20 }
+        ],
+        perigos: [
+          { x: 460,  y: 398, largura: 70, altura: 12 },
+          { x: 1080, y: 398, largura: 80, altura: 12 },
+          { x: 1750, y: 398, largura: 85, altura: 12 },
+          { x: 2390, y: 398, largura: 80, altura: 12 }
+        ],
+        barrasOuro: [
+          { x: 300,  y: 285, coletada: false }, { x: 370,  y: 285, coletada: false },
+          { x: 585,  y: 220, coletada: false }, { x: 645,  y: 220, coletada: false },
+          { x: 770,  y: 375, coletada: false }, { x: 920,  y: 280, coletada: false },
+          { x: 990,  y: 280, coletada: false }, { x: 1240, y: 210, coletada: false },
+          { x: 1300, y: 210, coletada: false }, { x: 1580, y: 275, coletada: false },
+          { x: 1650, y: 275, coletada: false }, { x: 1910, y: 205, coletada: false },
+          { x: 2240, y: 270, coletada: false }, { x: 2550, y: 220, coletada: false },
+          { x: 2620, y: 220, coletada: false }
+        ],
+        inimigos: [
+          { x: 620,  y: 368, largura: 58, altura: 42, velX: -2.2, minX: 550,  maxX: 830,  vivo: true, anguloRoda: 0 },
+          { x: 900,  y: 273, largura: 54, altura: 42, velX: 1.8,  minX: 865,  maxX: 1040, vivo: true, anguloRoda: 0 },
+          { x: 1320, y: 368, largura: 58, altura: 42, velX: -2.6, minX: 1190, maxX: 1500, vivo: true, anguloRoda: 0 },
+          { x: 1960, y: 368, largura: 58, altura: 42, velX: -2.8, minX: 1860, maxX: 2160, vivo: true, anguloRoda: 0 },
+          { x: 2210, y: 263, largura: 54, altura: 42, velX: 2.0,  minX: 2185, maxX: 2360, vivo: true, anguloRoda: 0 }
+        ]
+      },
+      {
+        titulo: "❄️ Fase 2: Geleira Congelada",
+        corRocha: "#1e3a5f",
+        corBordaPlataforma: "#38bdf8",
+        corPerigo1: "#06b6d4",
+        corPerigo2: "#e0f2fe",
+        avisoPerigo: "Cuidado com o nitrogênio congelante!",
+        vilao: {
+          tipo: "gelo",
+          nome: "COLOSSO GLACIAL DE GELO",
+          hp: 4,
+          corCorpo: "#0f294a",
+          corBorda: "#38bdf8",
+          corDetalhe: "#7dd3fc",
+          corNucleo: "#bae6fd",
+          corCristal: "#facc15"
+        },
+        plataformas: [
+          { x: 0,    y: 410, largura: 3200, altura: 40 },
+          { x: 240,  y: 325, largura: 160,  altura: 20 },
+          { x: 480,  y: 240, largura: 160,  altura: 20 },
+          { x: 740,  y: 315, largura: 180,  altura: 20 },
+          { x: 1060, y: 250, largura: 170,  altura: 20 },
+          { x: 1360, y: 190, largura: 170,  altura: 20 },
+          { x: 1690, y: 310, largura: 190,  altura: 20 },
+          { x: 2040, y: 245, largura: 180,  altura: 20 },
+          { x: 2470, y: 255, largura: 200,  altura: 20 }
+        ],
+        perigos: [
+          { x: 410,  y: 398, largura: 75, altura: 12 },
+          { x: 960,  y: 398, largura: 85, altura: 12 },
+          { x: 1560, y: 398, largura: 90, altura: 12 },
+          { x: 2290, y: 398, largura: 95, altura: 12 }
+        ],
+        barrasOuro: [
+          { x: 280,  y: 290, coletada: false }, { x: 340,  y: 290, coletada: false },
+          { x: 520,  y: 205, coletada: false }, { x: 580,  y: 205, coletada: false },
+          { x: 800,  y: 280, coletada: false }, { x: 1110, y: 215, coletada: false },
+          { x: 1170, y: 215, coletada: false }, { x: 1410, y: 155, coletada: false },
+          { x: 1470, y: 155, coletada: false }, { x: 1750, y: 275, coletada: false },
+          { x: 1820, y: 275, coletada: false }, { x: 2100, y: 210, coletada: false },
+          { x: 2160, y: 210, coletada: false }, { x: 2520, y: 220, coletada: false },
+          { x: 2600, y: 220, coletada: false }
+        ],
+        inimigos: [
+          { x: 560,  y: 368, largura: 58, altura: 42, velX: -2.6, minX: 500,  maxX: 920,  vivo: true, anguloRoda: 0 },
+          { x: 760,  y: 273, largura: 54, altura: 42, velX: 2.1,  minX: 745,  maxX: 910,  vivo: true, anguloRoda: 0 },
+          { x: 1200, y: 368, largura: 58, altura: 42, velX: -3.0, minX: 1060, maxX: 1520, vivo: true, anguloRoda: 0 },
+          { x: 1850, y: 368, largura: 58, altura: 42, velX: -3.1, minX: 1680, maxX: 2240, vivo: true, anguloRoda: 0 },
+          { x: 2060, y: 203, largura: 54, altura: 42, velX: 2.3,  minX: 2045, maxX: 2210, vivo: true, anguloRoda: 0 }
+        ]
+      },
+      {
+        titulo: "☢️ Fase 3: Fortaleza Cibernética",
+        corRocha: "#1e1b2e",
+        corBordaPlataforma: "#a855f7",
+        corPerigo1: "#22c55e",
+        corPerigo2: "#bef264",
+        avisoPerigo: "Cuidado com o ácido radioativo!",
+        vilao: {
+          tipo: "ciber",
+          nome: "IMPERADOR ÔMEGA SUPREMO",
+          hp: 5,
+          corCorpo: "#141122",
+          corBorda: "#a855f7",
+          corDetalhe: "#22c55e",
+          corNucleo: "#4ade80",
+          corCristal: "#f43f5e"
+        },
+        plataformas: [
+          { x: 0,    y: 410, largura: 3200, altura: 40 },
+          { x: 230,  y: 320, largura: 150,  altura: 20 },
+          { x: 460,  y: 235, largura: 150,  altura: 20 },
+          { x: 710,  y: 315, largura: 160,  altura: 20 },
+          { x: 980,  y: 245, largura: 160,  altura: 20 },
+          { x: 1260, y: 185, largura: 160,  altura: 20 },
+          { x: 1580, y: 300, largura: 170,  altura: 20 },
+          { x: 1920, y: 230, largura: 170,  altura: 20 },
+          { x: 2240, y: 310, largura: 160,  altura: 20 },
+          { x: 2480, y: 250, largura: 190,  altura: 20 }
+        ],
+        perigos: [
+          { x: 390,  y: 398, largura: 80, altura: 12 },
+          { x: 890,  y: 398, largura: 85, altura: 12 },
+          { x: 1450, y: 398, largura: 95, altura: 12 },
+          { x: 2110, y: 398, largura: 95, altura: 12 }
+        ],
+        barrasOuro: [
+          { x: 270,  y: 285, coletada: false }, { x: 330,  y: 285, coletada: false },
+          { x: 500,  y: 200, coletada: false }, { x: 560,  y: 200, coletada: false },
+          { x: 770,  y: 280, coletada: false }, { x: 1030, y: 210, coletada: false },
+          { x: 1310, y: 150, coletada: false }, { x: 1370, y: 150, coletada: false },
+          { x: 1640, y: 265, coletada: false }, { x: 1700, y: 265, coletada: false },
+          { x: 1980, y: 195, coletada: false }, { x: 2040, y: 195, coletada: false },
+          { x: 2300, y: 275, coletada: false }, { x: 2520, y: 215, coletada: false },
+          { x: 2600, y: 215, coletada: false }
+        ],
+        inimigos: [
+          { x: 540,  y: 368, largura: 58, altura: 42, velX: -3.0, minX: 480,  maxX: 860,  vivo: true, anguloRoda: 0 },
+          { x: 730,  y: 273, largura: 54, altura: 42, velX: 2.3,  minX: 715,  maxX: 860,  vivo: true, anguloRoda: 0 },
+          { x: 1120, y: 368, largura: 58, altura: 42, velX: -3.3, minX: 990,  maxX: 1420, vivo: true, anguloRoda: 0 },
+          { x: 1750, y: 368, largura: 58, altura: 42, velX: -3.4, minX: 1560, maxX: 2080, vivo: true, anguloRoda: 0 },
+          { x: 1940, y: 188, largura: 54, altura: 42, velX: 2.5,  minX: 1925, maxX: 2080, vivo: true, anguloRoda: 0 },
+          { x: 2260, y: 268, largura: 54, altura: 42, velX: 2.4,  minX: 2245, maxX: 2390, vivo: true, anguloRoda: 0 }
+        ]
+      }
+    ];
+
+    // Carro Monstro do Jogador (64x44)
     const jogador = {
       x: 70,
       y: 340,
@@ -271,58 +509,48 @@
       invencivel: 0
     };
 
-    // Carro Monstro Vilão Gigante (Chefe no final da pista)
+    // Titã / Vilão Gigante da Fase Atual
     const chefeVilao = {
       x: 2840,
-      y: 292,
-      largura: 168,
-      altura: 118,
+      y: 262,
+      largura: 152,
+      altura: 148,
       velX: -1.4,
       minX: 2740,
       maxX: 2940,
       hp: CONFIG.vidaChefeInicial,
+      hpMax: CONFIG.vidaChefeInicial,
+      nome: "TITÃ CIBERNÉTICO DE LAVA",
+      tipo: "lava",
       vivo: true,
       invencivel: 0,
-      anguloRoda: 0
+      anguloEsteira: 0
     };
 
-    // Chão e Plataformas de Rocha Vulcânica
-    const plataformas = [
-      { x: 0,    y: 410, largura: 3200, altura: 40 }, // Estrada principal
-      { x: 260,  y: 320, largura: 170,  altura: 20 },
-      { x: 540,  y: 255, largura: 170,  altura: 20 },
-      { x: 860,  y: 315, largura: 190,  altura: 20 },
-      { x: 1180, y: 245, largura: 180,  altura: 20 },
-      { x: 1520, y: 310, largura: 200,  altura: 20 },
-      { x: 1850, y: 240, largura: 180,  altura: 20 },
-      { x: 2180, y: 305, largura: 190,  altura: 20 },
-      { x: 2500, y: 255, largura: 190,  altura: 20 }  // Plataforma de apoio perto do Chefe
-    ];
-
-    // Poças de Lava e Espinhos Vulcânicos na estrada
-    const perigosLava = [
-      { x: 460,  y: 398, largura: 70, altura: 12 },
-      { x: 1080, y: 398, largura: 80, altura: 12 },
-      { x: 1750, y: 398, largura: 85, altura: 12 },
-      { x: 2390, y: 398, largura: 80, altura: 12 }
-    ];
-
-    // Partículas do Vulcão (brasas e bolas de lava)
+    // Listas dinâmicas da fase atual
+    let plataformas = [];
+    let perigosLava = [];
     let brasas = [];
     let bolasLava = [];
+    let particulasExplosao = [];
     let tempoProximoJato = 0;
-
-    // Listas dinâmicas
     let barrasOuro = [];
     let inimigos = [];
 
     // ========================================================================
-    // CONTROLES DO TECLADO
+    // CONTROLES DO TECLADO E TOQUE
     // ========================================================================
     const teclas = {
       esquerda: false,
       direita: false
     };
+
+    function tentarPular() {
+      if (jogador.noChao && !jogoEncerrado) {
+        jogador.velY = CONFIG.forcaPulo;
+        jogador.noChao = false;
+      }
+    }
 
     window.addEventListener("keydown", (evento) => {
       const tecla = evento.key.toLowerCase();
@@ -332,10 +560,7 @@
 
       if (evento.code === "Space" || tecla === "arrowup" || tecla === "w") {
         evento.preventDefault();
-        if (jogador.noChao && !jogoEncerrado) {
-          jogador.velY = CONFIG.forcaPulo;
-          jogador.noChao = false;
-        }
+        tentarPular();
       }
     });
 
@@ -346,17 +571,53 @@
       if (tecla === "arrowright" || tecla === "d") teclas.direita = false;
     });
 
+    // Botões na tela para dispositivos móveis/tablets
+    const btnEsq = document.getElementById("btnEsq");
+    const btnDir = document.getElementById("btnDir");
+    const btnPular = document.getElementById("btnPular");
+
+    function vincularBotaoDirecional(elemento, propriedade) {
+      elemento.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        teclas[propriedade] = true;
+      }, { passive: false });
+      elemento.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        teclas[propriedade] = false;
+      }, { passive: false });
+      elemento.addEventListener("mousedown", () => { teclas[propriedade] = true; });
+      elemento.addEventListener("mouseup", () => { teclas[propriedade] = false; });
+      elemento.addEventListener("mouseleave", () => { teclas[propriedade] = false; });
+    }
+
+    vincularBotaoDirecional(btnEsq, "esquerda");
+    vincularBotaoDirecional(btnDir, "direita");
+
+    btnPular.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      tentarPular();
+    }, { passive: false });
+    btnPular.addEventListener("mousedown", tentarPular);
+
     // ========================================================================
     // INICIALIZAÇÃO E REINÍCIO DO JOGO
     // ========================================================================
-    function iniciarJogo() {
-      pontos = 0;
-      vidas = CONFIG.vidasIniciais;
+    function iniciarJogo(manterPontos = false) {
+      const fase = FASES[faseAtual];
+
+      if (!manterPontos) {
+        pontos = 0;
+        vidas = CONFIG.vidasIniciais;
+      }
+
       jogoEncerrado = false;
       cameraX = 0;
       tremorTela = 0;
       mensagemAviso = "";
       tempoAviso = 0;
+
+      // Atualiza título da fase atual
+      elTituloJogo.textContent = fase.titulo;
 
       // Reseta jogador
       jogador.x = 70;
@@ -368,55 +629,38 @@
       jogador.anguloRoda = 0;
       jogador.invencivel = 0;
 
-      // Reseta Carro Monstro Vilão Gigante
+      // Configura o Vilão Gigante exclusivo desta fase
       chefeVilao.x = 2840;
-      chefeVilao.y = 292;
-      chefeVilao.velX = -1.4;
-      chefeVilao.hp = CONFIG.vidaChefeInicial;
+      chefeVilao.y = 262;
+      chefeVilao.velX = -1.4 - faseAtual * 0.35;
+      chefeVilao.hp = fase.vilao.hp;
+      chefeVilao.hpMax = fase.vilao.hp;
+      chefeVilao.nome = fase.vilao.nome;
+      chefeVilao.tipo = fase.vilao.tipo;
       chefeVilao.vivo = true;
       chefeVilao.invencivel = 0;
+      chefeVilao.anguloEsteira = 0;
 
-      // Cria 15 Barras de Ouro espalhadas pela fase
-      barrasOuro = [
-        { x: 300,  y: 285, coletada: false },
-        { x: 370,  y: 285, coletada: false },
-        { x: 585,  y: 220, coletada: false },
-        { x: 645,  y: 220, coletada: false },
-        { x: 770,  y: 375, coletada: false },
-        { x: 920,  y: 280, coletada: false },
-        { x: 990,  y: 280, coletada: false },
-        { x: 1240, y: 210, coletada: false },
-        { x: 1300, y: 210, coletada: false },
-        { x: 1580, y: 275, coletada: false },
-        { x: 1650, y: 275, coletada: false },
-        { x: 1910, y: 205, coletada: false },
-        { x: 2240, y: 270, coletada: false },
-        { x: 2550, y: 220, coletada: false },
-        { x: 2620, y: 220, coletada: false }
-      ];
+      // Carrega plataformas, perigos, ouro e inimigos da fase atual
+      plataformas = fase.plataformas.map((p) => ({ ...p }));
+      perigosLava = fase.perigos.map((p) => ({ ...p }));
+      barrasOuro = fase.barrasOuro.map((b) => ({ ...b, coletada: false }));
+      inimigos = fase.inimigos.map((i) => ({ ...i, vivo: true, anguloRoda: 0 }));
 
-      // Cria Carros Monstros Vermelhos (inimigos)
-      inimigos = [
-        { x: 620,  y: 368, largura: 58, altura: 42, velX: -2.2, minX: 550,  maxX: 830,  vivo: true, anguloRoda: 0 },
-        { x: 900,  y: 273, largura: 54, altura: 42, velX: 1.8,  minX: 865,  maxX: 1040, vivo: true, anguloRoda: 0 },
-        { x: 1320, y: 368, largura: 58, altura: 42, velX: -2.6, minX: 1190, maxX: 1500, vivo: true, anguloRoda: 0 },
-        { x: 1960, y: 368, largura: 58, altura: 42, velX: -2.8, minX: 1860, maxX: 2160, vivo: true, anguloRoda: 0 },
-        { x: 2210, y: 263, largura: 54, altura: 42, velX: 2.0,  minX: 2185, maxX: 2360, vivo: true, anguloRoda: 0 }
-      ];
-
-      // Cria brasas iniciais flutuando no ar
+      // Cria partículas climáticas (brasas na Fase 1, neve na Fase 2, faíscas neon na Fase 3)
       brasas = [];
       for (let i = 0; i < 45; i++) {
         brasas.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
           raio: 1.5 + Math.random() * 2.5,
-          velY: -0.6 - Math.random() * 1.4,
-          velX: (Math.random() - 0.5) * 0.8
+          velY: faseAtual === 1 ? 0.8 + Math.random() * 1.5 : -0.6 - Math.random() * 1.4,
+          velX: (Math.random() - 0.5) * 0.9
         });
       }
 
       bolasLava = [];
+      particulasExplosao = [];
       tempoProximoJato = 40;
 
       telaFinal.classList.add("oculto");
@@ -424,10 +668,40 @@
       atualizarHUD();
     }
 
-    btnReiniciar.addEventListener("click", iniciarJogo);
+    btnReiniciar.addEventListener("click", () => {
+      if (acaoBotaoFinal === "proximaFase") {
+        faseAtual++;
+        vidas = Math.min(CONFIG.vidasIniciais, vidas + 1);
+        iniciarJogo(true);
+      } else if (acaoBotaoFinal === "reiniciarTudo") {
+        faseAtual = 0;
+        iniciarJogo(false);
+      } else {
+        iniciarJogo(false);
+      }
+    });
+
+    // Gera partículas de explosão (faíscas, fogo e estilhaços metálicos)
+    function criarExplosao(x, y, cores, quantidade = 22) {
+      for (let i = 0; i < quantidade; i++) {
+        const angulo = Math.random() * Math.PI * 2;
+        const velocidade = 2 + Math.random() * 6.5;
+        particulasExplosao.push({
+          x,
+          y,
+          velX: Math.cos(angulo) * velocidade,
+          velY: Math.sin(angulo) * velocidade - 2.5,
+          raio: 2.5 + Math.random() * 4.5,
+          cor: cores[Math.floor(Math.random() * cores.length)],
+          vida: 28 + Math.floor(Math.random() * 18),
+          vidaMax: 46
+        });
+      }
+    }
 
     function atualizarHUD() {
       const coletadas = barrasOuro.filter((b) => b.coletada).length;
+      elFase.textContent = `${faseAtual + 1}/${FASES.length}`;
       elPontos.textContent = pontos;
       elOuro.textContent = `${coletadas}/${barrasOuro.length}`;
       elVidas.textContent = vidas;
@@ -455,6 +729,12 @@
 
       vidas--;
       tremorTela = 12;
+      criarExplosao(
+        jogador.x + jogador.largura / 2,
+        jogador.y + jogador.altura / 2,
+        ["#ef4444", "#f97316", "#facc15"],
+        16
+      );
       atualizarHUD();
 
       if (vidas <= 0) {
@@ -471,19 +751,32 @@
 
       if (venceu) {
         const todasColetadas = barrasOuro.every((b) => b.coletada);
-        let msgExtra = "Você derrotou o Carro Monstro Gigante e escapou do vulcão!";
+        let msgExtra = `Você derrotou ${chefeVilao.nome}!`;
         if (todasColetadas) {
           pontos += CONFIG.bonusTodasBarras;
           msgExtra += ` Bônus de +${CONFIG.bonusTodasBarras} pts por pegar todas as barras de ouro!`;
         }
         atualizarHUD();
-        tituloFinal.textContent = "🏆 Vitória Épica!";
-        tituloFinal.style.color = "#4ade80";
-        textoFinal.textContent = msgExtra;
+
+        if (faseAtual < FASES.length - 1) {
+          acaoBotaoFinal = "proximaFase";
+          tituloFinal.textContent = `🎉 Fase ${faseAtual + 1} Concluída!`;
+          tituloFinal.style.color = "#38bdf8";
+          textoFinal.textContent = `${msgExtra} Prepare-se para a próxima fase (+1 vida bônus)!`;
+          btnReiniciar.textContent = `➡️ Ir para a Fase ${faseAtual + 2}`;
+        } else {
+          acaoBotaoFinal = "reiniciarTudo";
+          tituloFinal.textContent = "🏆 Campeão Supremo! Você Zerou!";
+          tituloFinal.style.color = "#4ade80";
+          textoFinal.textContent = `${msgExtra} Você conquistou todas as 3 fases!`;
+          btnReiniciar.textContent = "🔄 Jogar Novamente (Fase 1)";
+        }
       } else {
+        acaoBotaoFinal = "reiniciarFase";
         tituloFinal.textContent = "💥 Carro Destruído!";
         tituloFinal.style.color = "#f87171";
-        textoFinal.textContent = "A lava e os carros monstros venceram desta vez. Tente novamente!";
+        textoFinal.textContent = "Os perigos e os inimigos venceram desta vez. Tente novamente!";
+        btnReiniciar.textContent = `🔄 Tentar Fase ${faseAtual + 1} Novamente`;
       }
 
       pontosFinais.textContent = pontos;
@@ -491,23 +784,40 @@
     }
 
     function atualizarErupcaoVulcao() {
-      // Atualiza brasas flutuantes
+      // Atualiza partículas atmosféricas (brasas, neve ou faíscas neon)
       for (const brasa of brasas) {
         brasa.y += brasa.velY;
         brasa.x += brasa.velX;
         if (brasa.y < 0) {
           brasa.y = canvas.height;
           brasa.x = Math.random() * canvas.width;
+        } else if (brasa.y > canvas.height) {
+          brasa.y = 0;
+          brasa.x = Math.random() * canvas.width;
         }
       }
 
-      // Dispara bolas de lava da cratera do vulcão de fundo
+      // Atualiza partículas de explosão no mundo
+      for (let i = particulasExplosao.length - 1; i >= 0; i--) {
+        const p = particulasExplosao[i];
+        p.x += p.velX;
+        p.y += p.velY;
+        p.velY += 0.25;
+        p.vida--;
+        if (p.vida <= 0) {
+          particulasExplosao.splice(i, 1);
+        }
+      }
+
+      // Na Fase 1, dispara bolas de lava da cratera do vulcão de fundo
+      if (faseAtual !== 0) return;
+
       tempoProximoJato--;
       if (tempoProximoJato <= 0) {
         tempoProximoJato = 35 + Math.floor(Math.random() * 45);
         for (let i = 0; i < 3; i++) {
           bolasLava.push({
-            x: 430 + (Math.random() - 0.5) * 30, // Cratera do vulcão no fundo
+            x: 430 + (Math.random() - 0.5) * 30,
             y: 118,
             velX: (Math.random() - 0.5) * 6.5,
             velY: -4.5 - Math.random() * 4.5,
@@ -521,7 +831,7 @@
         const bola = bolasLava[i];
         bola.x += bola.velX;
         bola.y += bola.velY;
-        bola.velY += 0.22; // Gravidade da lava
+        bola.velY += 0.22;
         bola.vida--;
         if (bola.vida <= 0 || bola.y > canvas.height) {
           bolasLava.splice(i, 1);
@@ -597,6 +907,7 @@
         if (verificarColisao(jogador, areaBarra)) {
           barra.coletada = true;
           pontos += CONFIG.pontosPorBarraOuro;
+          criarExplosao(barra.x + 15, barra.y + 8, ["#fef08a", "#facc15", "#ffffff"], 10);
           atualizarHUD();
         }
       }
@@ -618,52 +929,70 @@
             inimigo.vivo = false;
             jogador.velY = -11;
             tremorTela = 8;
+            criarExplosao(
+              inimigo.x + inimigo.largura / 2,
+              inimigo.y + inimigo.altura / 2,
+              ["#ef4444", "#f97316", "#facc15", "#e2e8f0"],
+              24
+            );
             pontos += CONFIG.pontosPorInimigo;
             atualizarHUD();
           } else {
-            sofrerDano("Bateu em um Carro Monstro Vermelho!");
+            sofrerDano("Os espinhos do Carro Monstro Vermelho te atingiram!");
           }
         }
       }
 
-      // --- Perigos de Lava na Estrada ---
+      // --- Perigos na Estrada (Lava / Nitrogênio / Ácido) ---
       for (const lava of perigosLava) {
         if (verificarColisao(jogador, lava)) {
-          sofrerDano("Cuidado com a lava fervente!");
+          sofrerDano(FASES[faseAtual].avisoPerigo);
         }
       }
 
-      // --- Carro Monstro Vilão Gigante (Chefe Final) ---
+      // --- Vilão Gigante (Chefe Final da Fase) ---
       if (chefeVilao.vivo) {
         if (chefeVilao.invencivel > 0) chefeVilao.invencivel--;
 
         chefeVilao.x += chefeVilao.velX;
-        chefeVilao.anguloRoda += chefeVilao.velX * 0.04;
+        chefeVilao.anguloEsteira += chefeVilao.velX * 0.08;
         if (chefeVilao.x <= chefeVilao.minX || chefeVilao.x + chefeVilao.largura >= chefeVilao.maxX) {
           chefeVilao.velX *= -1;
         }
 
         if (verificarColisao(jogador, chefeVilao)) {
           const rodasAnteriores = jogador.y + jogador.altura - jogador.velY;
-          // Se pular no teto do Chefe Gigante
-          if (jogador.velY > 0 && rodasAnteriores <= chefeVilao.y + chefeVilao.altura * 0.45) {
-            jogador.velY = -13; // Quica bem alto
+          // Se pular no cristal vulnerável no topo da cabeça do Vilão
+          if (jogador.velY > 0 && rodasAnteriores <= chefeVilao.y + 46) {
+            jogador.velY = -13.5;
             if (chefeVilao.invencivel === 0) {
               chefeVilao.hp--;
               chefeVilao.invencivel = 45;
               tremorTela = 16;
+              criarExplosao(
+                chefeVilao.x + chefeVilao.largura / 2,
+                chefeVilao.y + 10,
+                ["#22d3ee", "#facc15", "#f97316", "#ffffff"],
+                26
+              );
 
               if (chefeVilao.hp <= 0) {
                 chefeVilao.vivo = false;
+                criarExplosao(
+                  chefeVilao.x + chefeVilao.largura / 2,
+                  chefeVilao.y + chefeVilao.altura / 2,
+                  ["#ef4444", "#f97316", "#facc15", "#22d3ee", "#e2e8f0"],
+                  55
+                );
                 pontos += CONFIG.pontosPorDerrotarChefe;
                 atualizarHUD();
-                mostrarAviso("BOOOOM! Você destruiu o Vilão Gigante! Cruze a chegada!");
+                mostrarAviso(`BOOOOM! Você destruiu ${chefeVilao.nome}! Cruze a chegada!`);
               } else {
-                mostrarAviso(`Acerto direto! Faltam ${chefeVilao.hp} golpes no Vilão Gigante!`);
+                mostrarAviso(`Acerto no cristal! Faltam ${chefeVilao.hp} golpes em ${chefeVilao.nome}!`);
               }
             }
           } else {
-            sofrerDano("O Carro Monstro Gigante te esmagou!");
+            sofrerDano(`As garras de ${chefeVilao.nome} te atingiram!`);
           }
         }
       }
@@ -672,7 +1001,7 @@
       if (jogador.x + jogador.largura >= CONFIG.posicaoChegada) {
         if (chefeVilao.vivo) {
           jogador.x = CONFIG.posicaoChegada - jogador.largura - 5;
-          mostrarAviso("Derrote o Carro Monstro Vilão Gigante antes de cruzar!");
+          mostrarAviso(`Derrote ${chefeVilao.nome} antes de cruzar!`);
         } else {
           finalizarJogo(true);
         }
@@ -683,7 +1012,97 @@
     // DESENHO DOS GRÁFICOS NO CANVAS
     // ========================================================================
     function desenharFundoVulcao() {
-      // Céu vulcânico escuro e incandescente
+      // FASE 2: GELEIRA CONGELADA COM AURORA BOREAL
+      if (faseAtual === 1) {
+        const gradGelo = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradGelo.addColorStop(0, "#020617");
+        gradGelo.addColorStop(0.55, "#0c4a6e");
+        gradGelo.addColorStop(1, "#38bdf8");
+        ctx.fillStyle = gradGelo;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Ondas de Aurora Boreal animadas
+        const onda = Math.sin(Date.now() / 600) * 18;
+        ctx.fillStyle = "rgba(52, 211, 153, 0.22)";
+        ctx.beginPath();
+        ctx.moveTo(0, 110 + onda);
+        ctx.quadraticCurveTo(260, 45 - onda, 520, 105 + onda);
+        ctx.quadraticCurveTo(680, 140 - onda, 800, 80 + onda);
+        ctx.lineTo(800, 165);
+        ctx.lineTo(0, 165);
+        ctx.closePath();
+        ctx.fill();
+
+        // Montanhas glaciais em parallax
+        for (let i = 0; i < 6; i++) {
+          const picoX = i * 240 - ((cameraX * 0.14) % 240);
+          ctx.fillStyle = "#0f294a";
+          ctx.beginPath();
+          ctx.moveTo(picoX - 100, 410);
+          ctx.lineTo(picoX + 70, 165);
+          ctx.lineTo(picoX + 240, 410);
+          ctx.closePath();
+          ctx.fill();
+
+          // Topo nevado brilhante
+          ctx.fillStyle = "#e0f2fe";
+          ctx.beginPath();
+          ctx.moveTo(picoX + 70, 165);
+          ctx.lineTo(picoX + 28, 225);
+          ctx.lineTo(picoX + 68, 212);
+          ctx.lineTo(picoX + 112, 225);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Flocos de neve caindo
+        ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+        for (const floco of brasas) {
+          ctx.beginPath();
+          ctx.arc(floco.x, floco.y, floco.raio, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        return;
+      }
+
+      // FASE 3: FORTALEZA CIBERNÉTICA NEON-TÓXICA
+      if (faseAtual === 2) {
+        const gradCiber = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradCiber.addColorStop(0, "#090514");
+        gradCiber.addColorStop(0.55, "#2e1065");
+        gradCiber.addColorStop(1, "#581c87");
+        ctx.fillStyle = gradCiber;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Torres industriais futuristas em parallax
+        for (let i = 0; i < 7; i++) {
+          const tx = i * 190 - ((cameraX * 0.15) % 190);
+          const alt = 150 + (i % 3) * 45;
+          ctx.fillStyle = "#130b24";
+          ctx.fillRect(tx, 410 - alt, 95, alt);
+          ctx.strokeStyle = "#7e22ce";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(tx, 410 - alt, 95, alt);
+
+          // Janelas neon verdes e roxas
+          ctx.fillStyle = i % 2 === 0 ? "#4ade80" : "#c084fc";
+          for (let wy = 410 - alt + 18; wy < 385; wy += 24) {
+            ctx.fillRect(tx + 14, wy, 24, 5);
+            ctx.fillRect(tx + 54, wy, 24, 5);
+          }
+        }
+
+        // Faíscas de plasma tóxico subindo
+        ctx.fillStyle = "rgba(74, 222, 128, 0.8)";
+        for (const faisca of brasas) {
+          ctx.beginPath();
+          ctx.arc(faisca.x, faisca.y, faisca.raio, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        return;
+      }
+
+      // FASE 1: VULCÃO EM ERUPÇÃO
       const gradCeu = ctx.createLinearGradient(0, 0, 0, canvas.height);
       gradCeu.addColorStop(0, "#0c0404");
       gradCeu.addColorStop(0.55, "#450a0a");
@@ -703,9 +1122,8 @@
         ctx.fill();
       }
 
-      // GRANDE VULCÃO PRINCIPAL JOGANDO LAVA PRA FORA (parallax suave)
+      // GRANDE VULCÃO PRINCIPAL JOGANDO LAVA PRA FORA
       const vx = 430 - cameraX * 0.06;
-      // Cone do vulcão
       ctx.fillStyle = "#180808";
       ctx.beginPath();
       ctx.moveTo(vx - 260, 410);
@@ -763,199 +1181,569 @@
       }
     }
 
-    // Função para desenhar Carros Monstros (Jogador e Inimigos Vermelhos)
-    function desenharCarroMonstro(x, y, largura, altura, corPrincipal, corDetalhe, direcao, anguloRoda) {
+    // Desenha Carros Monstros (Jogador e Inimigos Vermelhos) com Espinhos e Rodas com Cravos
+    function desenharCarroMonstro(x, y, largura, altura, corPrincipal, corDetalhe, direcao, anguloRoda, ehInimigo = false) {
       ctx.save();
 
-      // Suspensão / Amortecedores
-      ctx.strokeStyle = "#94a3b8";
+      // 1. Suspensão elevada com amortecedores
+      ctx.strokeStyle = "#cbd5e1";
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(x + 14, y + altura - 14);
-      ctx.lineTo(x + 14, y + altura - 4);
-      ctx.moveTo(x + largura - 14, y + altura - 14);
-      ctx.lineTo(x + largura - 14, y + altura - 4);
+      ctx.moveTo(x + 15, y + altura - 18);
+      ctx.lineTo(x + 15, y + altura - 6);
+      ctx.moveTo(x + largura - 15, y + altura - 18);
+      ctx.lineTo(x + largura - 15, y + altura - 6);
       ctx.stroke();
 
-      // Lataria da picape Monster Truck
+      // Molas helicoidais vermelhas/amarelas
+      ctx.strokeStyle = ehInimigo ? "#facc15" : "#f97316";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + 12, y + altura - 16);
+      ctx.lineTo(x + 18, y + altura - 12);
+      ctx.lineTo(x + 12, y + altura - 8);
+      ctx.moveTo(x + largura - 18, y + altura - 16);
+      ctx.lineTo(x + largura - 12, y + altura - 12);
+      ctx.lineTo(x + largura - 18, y + altura - 8);
+      ctx.stroke();
+
+      // 2. Chassi / Lataria robusta
+      ctx.fillStyle = corPrincipal;
+      ctx.strokeStyle = "#09090b";
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.roundRect(x + 5, y + 11, largura - 10, altura - 23, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // 3. Cabine com Santo-Antônio
+      const cabineX = direcao === 1 ? x + 13 : x + 21;
       ctx.fillStyle = corPrincipal;
       ctx.beginPath();
-      ctx.roundRect(x + 4, y + 12, largura - 8, altura - 22, 6);
+      ctx.roundRect(cabineX, y + 1, largura - 34, 13, 4);
       ctx.fill();
+      ctx.stroke();
 
-      // Cabine superior
-      const cabineX = direcao === 1 ? x + 12 : x + 20;
-      ctx.fillStyle = corPrincipal;
-      ctx.beginPath();
-      ctx.roundRect(cabineX, y + 2, largura - 32, 14, 4);
-      ctx.fill();
+      // Para-brisa
+      ctx.fillStyle = ehInimigo ? "#fef08a" : "#bae6fd";
+      const vidroX = direcao === 1 ? cabineX + (largura - 34) - 12 : cabineX + 2;
+      ctx.fillRect(vidroX, y + 3, 10, 8);
 
-      // Vidro da cabine
-      ctx.fillStyle = "#bae6fd";
-      const vidroX = direcao === 1 ? cabineX + (largura - 32) - 12 : cabineX + 2;
-      ctx.fillRect(vidroX, y + 4, 10, 8);
-
-      // Faixa decorativa lateral
+      // Faixa lateral
       ctx.fillStyle = corDetalhe;
-      ctx.fillRect(x + 8, y + 18, largura - 16, 4);
+      ctx.fillRect(x + 9, y + 17, largura - 18, 4);
 
-      // Rodas gigantes com calotas giratórias
-      const raioRoda = 11;
-      const posRodas = [x + 14, x + largura - 14];
-      const rodaY = y + altura - 8;
+      // Escapamento traseiro com chama
+      const escapX = direcao === 1 ? x + 8 : x + largura - 12;
+      ctx.fillStyle = "#52525b";
+      ctx.fillRect(escapX, y + 4, 4, 9);
+      if (Math.abs(anguloRoda) > 0) {
+        ctx.fillStyle = "#f97316";
+        ctx.beginPath();
+        ctx.arc(escapX - direcao * 4, y + 3, 3.5 + Math.sin(Date.now() / 60) * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 4. ESPINHOS METÁLICOS NOS PARA-CHOQUES (DIANTEIRO E TRASEIRO)
+      ctx.fillStyle = "#e2e8f0";
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i < 3; i++) {
+        const sy = y + 13 + i * 5;
+        // Espinhos na esquerda
+        ctx.beginPath();
+        ctx.moveTo(x + 5, sy);
+        ctx.lineTo(x - 4, sy + 2.5);
+        ctx.lineTo(x + 5, sy + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Espinhos na direita
+        ctx.beginPath();
+        ctx.moveTo(x + largura - 5, sy);
+        ctx.lineTo(x + largura + 4, sy + 2.5);
+        ctx.lineTo(x + largura - 5, sy + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // 5. Rodas Gigantes com Cravos Giratórios
+      const raioRoda = 11.5;
+      const posRodas = [x + 15, x + largura - 15];
+      const rodaY = y + altura - 9;
 
       for (const rx of posRodas) {
-        // Pneu
+        // Cravos externos do pneu girando
+        ctx.fillStyle = "#18181b";
+        for (let c = 0; c < 8; c++) {
+          const ang = anguloRoda + (c * Math.PI) / 4;
+          const cx = rx + Math.cos(ang) * (raioRoda + 1.5);
+          const cy = rodaY + Math.sin(ang) * (raioRoda + 1.5);
+          ctx.beginPath();
+          ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Pneu principal
         ctx.fillStyle = "#09090b";
         ctx.beginPath();
         ctx.arc(rx, rodaY, raioRoda, 0, Math.PI * 2);
         ctx.fill();
 
-        // Aro metálico
-        ctx.fillStyle = "#cbd5e1";
+        // Aro colorido
+        ctx.fillStyle = ehInimigo ? "#ef4444" : "#38bdf8";
         ctx.beginPath();
-        ctx.arc(rx, rodaY, 5, 0, Math.PI * 2);
+        ctx.arc(rx, rodaY, 5.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Raio girando para dar sensação de velocidade
-        ctx.strokeStyle = "#334155";
-        ctx.lineWidth = 2;
+        // Centro metálico
+        ctx.fillStyle = "#f8fafc";
         ctx.beginPath();
-        ctx.moveTo(rx + Math.cos(anguloRoda) * 5, rodaY + Math.sin(anguloRoda) * 5);
-        ctx.lineTo(rx - Math.cos(anguloRoda) * 5, rodaY - Math.sin(anguloRoda) * 5);
-        ctx.stroke();
+        ctx.arc(rx, rodaY, 2.5, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       ctx.restore();
     }
 
-    // Função especial para desenhar o CARRO MONSTRO VILÃO GIGANTE olhando para o jogador
+    // Desenha os 3 VILÕES GIGANTES (Lava, Gelo e Ciber-Imperador) com olhos que seguem o jogador
     function desenharChefeVilaoGigante() {
       if (!chefeVilao.vivo) return;
 
       const piscando = chefeVilao.invencivel > 0 && Math.floor(chefeVilao.invencivel / 4) % 2 === 0;
       if (piscando) return;
 
-      const { x, y, largura, altura, anguloRoda } = chefeVilao;
+      const { x, y, largura, altura, anguloEsteira, tipo, nome } = chefeVilao;
+      const temaVilao = FASES[faseAtual].vilao;
+      const centroX = x + largura / 2;
+      const pulso = Math.sin(Date.now() / 130);
+      const animGarra = Math.sin(Date.now() / 220) * 6;
 
-      // Suspensão reforçada vermelha
-      ctx.strokeStyle = "#ef4444";
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(x + 34, y + altura - 38);
-      ctx.lineTo(x + 34, y + altura - 14);
-      ctx.moveTo(x + largura - 34, y + altura - 38);
-      ctx.lineTo(x + largura - 34, y + altura - 14);
-      ctx.stroke();
+      ctx.save();
 
-      // Chassi gigante blindado
-      ctx.fillStyle = CONFIG.corCarroVilao;
-      ctx.strokeStyle = "#dc2626";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.roundRect(x + 8, y + 32, largura - 16, altura - 58, 12);
-      ctx.fill();
-      ctx.stroke();
-
-      // Cabine monstruosa
-      ctx.fillStyle = "#27272a";
-      ctx.beginPath();
-      ctx.roundRect(x + 36, y + 6, largura - 64, 34, 8);
-      ctx.fill();
-      ctx.stroke();
-
-      // Chifres / Escapamentos flamejantes no teto
-      ctx.fillStyle = "#52525b";
-      ctx.fillRect(x + largura - 36, y - 8, 8, 22);
-      ctx.fillStyle = "#f97316";
-      ctx.beginPath();
-      ctx.arc(x + largura - 32, y - 12, 6 + Math.sin(Date.now() / 80) * 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Grade frontal com dentes metálicos afiados
-      ctx.fillStyle = "#e2e8f0";
-      for (let i = 0; i < 4; i++) {
-        const dy = y + 48 + i * 10;
+      // 1. Propulsores e Esteiras na base
+      const baseY = y + altura - 26;
+      for (let f = 0; f < 4; f++) {
+        const fx = x + 26 + f * 33;
+        const chamaAlt = 10 + Math.sin(Date.now() / 50 + f) * 4;
+        ctx.fillStyle = temaVilao.corDetalhe;
         ctx.beginPath();
-        ctx.moveTo(x + 8, dy);
-        ctx.lineTo(x - 4, dy + 4);
-        ctx.lineTo(x + 8, dy + 8);
+        ctx.moveTo(fx - 8, baseY + 22);
+        ctx.lineTo(fx, baseY + 22 + chamaAlt);
+        ctx.lineTo(fx + 8, baseY + 22);
         ctx.closePath();
         ctx.fill();
       }
 
-      // OLHOS GIGANTES QUE OLHAM DIRETAMENTE PARA O JOGADOR!
+      ctx.fillStyle = "#09090b";
+      ctx.strokeStyle = temaVilao.corBorda;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(x + 14, baseY, largura - 28, 24, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      for (let r = 0; r < 4; r++) {
+        const rx = x + 30 + r * 30;
+        const ry = baseY + 12;
+        ctx.fillStyle = temaVilao.corDetalhe;
+        ctx.beginPath();
+        ctx.arc(rx, ry, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#18181b";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(rx + Math.cos(anguloEsteira) * 7, ry + Math.sin(anguloEsteira) * 7);
+        ctx.lineTo(rx - Math.cos(anguloEsteira) * 7, ry - Math.sin(anguloEsteira) * 7);
+        ctx.stroke();
+      }
+
+      // 2. Torso Gigante Blindado
+      ctx.fillStyle = temaVilao.corCorpo;
+      ctx.strokeStyle = temaVilao.corBorda;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + 26, baseY);
+      ctx.lineTo(x + 14, y + 48);
+      ctx.lineTo(x + 42, y + 36);
+      ctx.lineTo(x + largura - 42, y + 36);
+      ctx.lineTo(x + largura - 14, y + 48);
+      ctx.lineTo(x + largura - 26, baseY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Veios de energia no torso
+      ctx.strokeStyle = temaVilao.corDetalhe;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(x + 30, y + 65);
+      ctx.lineTo(centroX - 22, y + 82);
+      ctx.moveTo(x + largura - 30, y + 65);
+      ctx.lineTo(centroX + 22, y + 82);
+      ctx.stroke();
+
+      // 3. Ombreiras Pontiagudas
+      const ombreiras = [
+        { ox: x + 16, dir: -1 },
+        { ox: x + largura - 16, dir: 1 }
+      ];
+      for (const omb of ombreiras) {
+        ctx.fillStyle = tipo === "gelo" ? "#0284c7" : "#27272a";
+        ctx.strokeStyle = temaVilao.corBorda;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(omb.ox, y + 38);
+        ctx.lineTo(omb.ox + omb.dir * (tipo === "ciber" ? 30 : 22), y + 22);
+        ctx.lineTo(omb.ox + omb.dir * 16, y + 58);
+        ctx.lineTo(omb.ox, y + 56);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // 4. Núcleo de Energia Pulsante no Peito
+      const peitoY = y + 84;
+      const raioNucleo = 19 + pulso * 2.5;
+      const gradNucleo = ctx.createRadialGradient(centroX, peitoY, 3, centroX, peitoY, raioNucleo + 6);
+      gradNucleo.addColorStop(0, "#ffffff");
+      gradNucleo.addColorStop(0.5, temaVilao.corNucleo);
+      gradNucleo.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = gradNucleo;
+      ctx.beginPath();
+      ctx.arc(centroX, peitoY, raioNucleo + 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = temaVilao.corNucleo;
+      ctx.beginPath();
+      ctx.arc(centroX, peitoY, 10 + pulso * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 5. Garras Mecânicas Articuladas com Espinhos
+      const garraEsqX = x - 14;
+      const garraEsqY = y + 76 + animGarra;
+      ctx.strokeStyle = "#3f3f46";
+      ctx.lineWidth = 9;
+      ctx.beginPath();
+      ctx.moveTo(x + 20, y + 62);
+      ctx.lineTo(garraEsqX + 12, garraEsqY);
+      ctx.stroke();
+
+      ctx.fillStyle = tipo === "gelo" ? "#bae6fd" : tipo === "ciber" ? "#4ade80" : "#cbd5e1";
+      ctx.beginPath();
+      ctx.moveTo(garraEsqX + 14, garraEsqY - 8);
+      ctx.lineTo(garraEsqX - 10, garraEsqY - 14);
+      ctx.lineTo(garraEsqX + 4, garraEsqY - 2);
+      ctx.moveTo(garraEsqX + 14, garraEsqY + 8);
+      ctx.lineTo(garraEsqX - 10, garraEsqY + 14);
+      ctx.lineTo(garraEsqX + 4, garraEsqY + 2);
+      ctx.fill();
+
+      const garraDirX = x + largura + 14;
+      const garraDirY = y + 76 - animGarra;
+      ctx.strokeStyle = "#3f3f46";
+      ctx.lineWidth = 9;
+      ctx.beginPath();
+      ctx.moveTo(x + largura - 20, y + 62);
+      ctx.lineTo(garraDirX - 12, garraDirY);
+      ctx.stroke();
+
+      ctx.fillStyle = tipo === "gelo" ? "#bae6fd" : tipo === "ciber" ? "#4ade80" : "#cbd5e1";
+      ctx.beginPath();
+      ctx.moveTo(garraDirX - 14, garraDirY - 8);
+      ctx.lineTo(garraDirX + 10, garraDirY - 14);
+      ctx.lineTo(garraDirX - 4, garraDirY - 2);
+      ctx.moveTo(garraDirX - 14, garraDirY + 8);
+      ctx.lineTo(garraDirX + 10, garraDirY + 14);
+      ctx.lineTo(garraDirX - 4, garraDirY + 2);
+      ctx.fill();
+
+      // 6. Cabeça Blindada, Chifres/Coroa e Cristal Vulnerável no Topo
+      ctx.fillStyle = temaVilao.corCorpo;
+      ctx.strokeStyle = temaVilao.corBorda;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(centroX - 34, y + 4, 68, 36, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // Chifres laterais personalizados por vilão
+      ctx.fillStyle = tipo === "gelo" ? "#7dd3fc" : tipo === "ciber" ? "#9333ea" : "#27272a";
+      ctx.beginPath();
+      ctx.moveTo(centroX - 32, y + 16);
+      ctx.quadraticCurveTo(centroX - 56, y + 6, centroX - 48, y - 16);
+      ctx.lineTo(centroX - 28, y + 8);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(centroX + 32, y + 16);
+      ctx.quadraticCurveTo(centroX + 56, y + 6, centroX + 48, y - 16);
+      ctx.lineTo(centroX + 28, y + 8);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = temaVilao.corDetalhe;
+      ctx.beginPath();
+      ctx.arc(centroX - 48, y - 18, 5 + pulso * 1.5, 0, Math.PI * 2);
+      ctx.arc(centroX + 48, y - 18, 5 + pulso * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // CRISTAL VULNERÁVEL BRILHANTE NO TOPO DA CABEÇA
+      ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+      ctx.beginPath();
+      ctx.arc(centroX, y - 4, 15 + pulso * 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = temaVilao.corCristal;
+      ctx.beginPath();
+      ctx.moveTo(centroX, y - 16);
+      ctx.lineTo(centroX + 10, y - 3);
+      ctx.lineTo(centroX, y + 5);
+      ctx.lineTo(centroX - 10, y - 3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.moveTo(centroX, y - 13);
+      ctx.lineTo(centroX + 4, y - 4);
+      ctx.lineTo(centroX, y - 1);
+      ctx.closePath();
+      ctx.fill();
+
+      // 7. OLHOS GIGANTES BRILHANTES QUE ACOMPANHAM O JOGADOR (X, Y)
       const centroJogadorX = jogador.x + jogador.largura / 2;
       const centroJogadorY = jogador.y + jogador.altura / 2;
 
       const olhos = [
-        { ox: x + 56, oy: y + 23 },
-        { ox: x + 84, oy: y + 23 }
+        { ox: centroX - 15, oy: y + 22 },
+        { ox: centroX + 15, oy: y + 22 }
       ];
 
       for (const olho of olhos) {
-        // Globo ocular vermelho/amarelo brilhante
         ctx.fillStyle = "#fef08a";
         ctx.beginPath();
-        ctx.arc(olho.ox, olho.oy, 10, 0, Math.PI * 2);
+        ctx.arc(olho.ox, olho.oy, 9.5, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = "#dc2626";
+        ctx.strokeStyle = temaVilao.corBorda;
         ctx.lineWidth = 2.5;
         ctx.stroke();
 
-        // Calcula o ângulo exato entre o olho do vilão e o carro do jogador
         const anguloOlhar = Math.atan2(centroJogadorY - olho.oy, centroJogadorX - olho.ox);
-        const pupilaX = olho.ox + Math.cos(anguloOlhar) * 4.5;
-        const pupilaY = olho.oy + Math.sin(anguloOlhar) * 4.5;
+        const pupilaX = olho.ox + Math.cos(anguloOlhar) * 4.2;
+        const pupilaY = olho.oy + Math.sin(anguloOlhar) * 4.2;
 
-        // Pupila vermelha intensa encarando o jogador
-        ctx.fillStyle = "#b91c1c";
+        ctx.fillStyle = tipo === "gelo" ? "#0369a1" : "#b91c1c";
         ctx.beginPath();
-        ctx.arc(pupilaX, pupilaY, 4.5, 0, Math.PI * 2);
+        ctx.arc(pupilaX, pupilaY, 4.3, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Sobrancelha brava
-      ctx.strokeStyle = "#ef4444";
-      ctx.lineWidth = 4;
+      // 8. Barra de Vida do Chefe
+      const barraLargura = 156;
+      const barraX = centroX - barraLargura / 2;
+      const barraY = y - 34;
+      ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+      ctx.fillRect(barraX - 2, barraY - 2, barraLargura + 4, 14);
+      ctx.fillStyle = temaVilao.corBorda;
+      ctx.fillRect(barraX, barraY, (chefeVilao.hp / chefeVilao.hpMax) * barraLargura, 10);
+
+      ctx.fillStyle = "#fef08a";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(nome, centroX, barraY - 6);
+      ctx.textAlign = "left";
+
+      ctx.restore();
+    }
+
+    function desenharBarraOuro(x, y) {
+      const flutuacao = Math.sin(Date.now() / 180 + x) * 3;
+      const by = y + flutuacao;
+
+      // Trapézio 3D dourado (Barra de Ouro)
+      ctx.fillStyle = "#eab308";
       ctx.beginPath();
-      ctx.moveTo(x + 44, y + 12);
-      ctx.lineTo(x + 70, y + 17);
-      ctx.lineTo(x + 96, y + 12);
-      ctx.stroke();
+      ctx.moveTo(x + 5, by);
+      ctx.lineTo(x + 25, by);
+      ctx.lineTo(x + 30, by + 16);
+      ctx.lineTo(x, by + 16);
+      ctx.closePath();
+      ctx.fill();
 
-      // Rodas colossais do Vilão
-      const raioRodaGigante = 26;
-      const rodasVilao = [x + 36, x + largura - 36];
-      const rodaY = y + altura - 22;
+      // Face superior iluminada
+      ctx.fillStyle = "#fef08a";
+      ctx.beginPath();
+      ctx.moveTo(x + 6, by + 2);
+      ctx.lineTo(x + 24, by + 2);
+      ctx.lineTo(x + 22, by + 7);
+      ctx.lineTo(x + 8, by + 7);
+      ctx.closePath();
+      ctx.fill();
 
-      for (const rx of rodasVilao) {
-        ctx.fillStyle = "#09090b";
+      ctx.strokeStyle = "#a16207";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x + 6, by + 2, 18, 12);
+    }
+
+    function desenharParticulasExplosao() {
+      for (const p of particulasExplosao) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.vida / p.vidaMax);
+        ctx.fillStyle = p.cor;
         ctx.beginPath();
-        ctx.arc(rx, rodaY, raioRodaGigante, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
+      }
+    }
 
-        ctx.strokeStyle = "#dc2626";
-        ctx.lineWidth = 3;
-        ctx.stroke();
+    function desenhar() {
+      ctx.save();
 
-        ctx.fillStyle = "#71717a";
-        ctx.beginPath();
-        ctx.arc(rx, rodaY, 11, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = "#18181b";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(rx + Math.cos(anguloRoda) * 11, rodaY + Math.sin(anguloRoda) * 11);
-        ctx.lineTo(rx - Math.cos(anguloRoda) * 11, rodaY - Math.sin(anguloRoda) * 11);
-        ctx.stroke();
+      // Efeito de tremor da tela em impactos/explosões
+      if (tremorTela > 0) {
+        const dx = (Math.random() - 0.5) * 8;
+        const dy = (Math.random() - 0.5) * 8;
+        ctx.translate(dx, dy);
       }
 
-      // Barra de Vida flutuante acima do Vilão Gigante
-      const barraLargura = 120;
-      const barraX = x + (largura - barraLargura) / 2;
-      const barraY = y - 32;
-      ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-      ctx.fillRect(barraX - 2, barraY
+      // 1. Fundo da Fase Atual
+      desenharFundoVulcao();
+
+      // 2. Aplica deslocamento da câmera do mundo
+      ctx.save();
+      ctx.translate(-cameraX, 0);
+
+      // Placas de distância na pista
+      ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+      ctx.font = "bold 14px sans-serif";
+      for (let m = 500; m <= 2500; m += 500) {
+        ctx.fillText(`🚩 ${m}m`, m, 398);
+      }
+
+      // Plataformas e Estrada da Fase Atual
+      const faseVisual = FASES[faseAtual];
+      for (const plat of plataformas) {
+        ctx.fillStyle = faseVisual.corRocha;
+        ctx.fillRect(plat.x, plat.y, plat.largura, plat.altura);
+
+        ctx.fillStyle = faseVisual.corBordaPlataforma;
+        ctx.fillRect(plat.x, plat.y, plat.largura, 5);
+      }
+
+      // Poças de Perigo na Estrada (Lava / Nitrogênio / Ácido)
+      for (const lava of perigosLava) {
+        ctx.fillStyle = faseVisual.corPerigo1;
+        ctx.fillRect(lava.x, lava.y, lava.largura, lava.altura);
+        ctx.fillStyle = faseVisual.corPerigo2;
+        ctx.fillRect(lava.x + 6, lava.y + 2, lava.largura - 12, 4);
+      }
+
+      // Linha de Chegada Quadriculada
+      const chegadaX = CONFIG.posicaoChegada;
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillRect(chegadaX, 270, 6, 140);
+      for (let linha = 0; linha < 6; linha++) {
+        for (let col = 0; col < 3; col++) {
+          ctx.fillStyle = (linha + col) % 2 === 0 ? "#ffffff" : "#09090b";
+          ctx.fillRect(chegadaX + 6 + col * 12, 270 + linha * 12, 12, 12);
+        }
+      }
+
+      // Barras de Ouro
+      for (const barra of barrasOuro) {
+        if (!barra.coletada) {
+          desenharBarraOuro(barra.x, barra.y);
+        }
+      }
+
+      // Carros Monstros Vermelhos (Inimigos com Espinhos)
+      for (const inimigo of inimigos) {
+        if (!inimigo.vivo) continue;
+        const dirInimigo = inimigo.velX >= 0 ? 1 : -1;
+        desenharCarroMonstro(
+          inimigo.x,
+          inimigo.y,
+          inimigo.largura,
+          inimigo.altura,
+          CONFIG.corCarroInimigo,
+          "#facc15",
+          dirInimigo,
+          inimigo.anguloRoda,
+          true
+        );
+      }
+
+      // Vilão Gigante da Fase Atual
+      desenharChefeVilaoGigante();
+
+      // Carro Monstro do Jogador (com Espinhos)
+      const visivel = jogador.invencivel === 0 || Math.floor(jogador.invencivel / 5) % 2 === 0;
+      if (visivel) {
+        desenharCarroMonstro(
+          jogador.x,
+          jogador.y,
+          jogador.largura,
+          jogador.altura,
+          CONFIG.corCarroJogador,
+          CONFIG.corDetalheJogador,
+          jogador.direcao,
+          jogador.anguloRoda,
+          false
+        );
+      }
+
+      // Partículas de Explosão
+      desenharParticulasExplosao();
+
+      ctx.restore();
+
+      // 3. Barra de Progresso no Topo da Tela
+      const progresso = Math.min(1, jogador.x / CONFIG.posicaoChegada);
+      ctx.fillStyle = "rgba(15, 10, 10, 0.75)";
+      ctx.fillRect(220, 12, 360, 14);
+      ctx.fillStyle = "#f97316";
+      ctx.fillRect(222, 14, 356 * progresso, 10);
+      ctx.strokeStyle = "#fdba74";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(220, 12, 360, 14);
+
+      // 4. Mensagem de Aviso Temporária
+      if (tempoAviso > 0) {
+        ctx.fillStyle = "rgba(15, 5, 5, 0.85)";
+        ctx.fillRect(140, 36, 520, 34);
+        ctx.strokeStyle = "#f97316";
+        ctx.strokeRect(140, 36, 520, 34);
+        ctx.fillStyle = "#fde047";
+        ctx.font = "bold 14px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(mensagemAviso, canvas.width / 2, 58);
+        ctx.textAlign = "left";
+      }
+
+      ctx.restore();
+    }
+
+    // ========================================================================
+    // LOOP PRINCIPAL DO JOGO
+    // ========================================================================
+    function loopJogo() {
+      atualizar();
+      desenhar();
+      requestAnimationFrame(loopJogo);
+    }
+
+    window.onload = function () {
+      iniciarJogo(false);
+      loopJogo();
+    };
+  </script>
+</body>
+</html>
