@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- ATUALIZADO: Novo título na aba do navegador -->
-    <title>Operação Circuito Celeste - Protótipo V-1</title>
+    <title>Operação Circuito Celeste - Perseguição Aérea</title>
     <style>
-        /* CORRIGIDO: O asterisco (*) aplica a regra em toda a página */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -76,13 +74,13 @@
             justify-content: space-between;
             align-items: center;
             pointer-events: none;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: bold;
             text-shadow: 2px 2px 4px #000;
         }
 
         .hud-card {
-            background: rgba(11, 12, 16, 0.75);
+            background: rgba(11, 12, 16, 0.78);
             padding: 8px 16px;
             border-radius: 20px;
             border: 1px solid rgba(69, 243, 255, 0.4);
@@ -180,25 +178,26 @@
 </head>
 <body>
 
-    <!-- ADICIONADO: Cabeçalho com a história da missão -->
     <header>
         <h1>OPERAÇÃO CIRCUITO CELESTE</h1>
         <p class="subtitle">
-            <strong>Missão:</strong> Você é o piloto de testes do <strong>Protótipo Vermelho V-1</strong>. 
-            Salte pelas pistas suspensas, colete as <strong>Células de Energia</strong> e desvie dos veículos autônomos 
-            até cruzar o Portal de Homologação!
+            <strong>Missão:</strong> Pilote o <strong>Protótipo Vermelho V-1</strong>, colete as <strong>Células de Energia</strong> 
+            e escape do holofote do <strong>Helicóptero Policial</strong> até o Portal de Homologação!
         </p>
     </header>
 
     <div id="game-wrapper">
-        <!-- Canvas onde o jogo é renderizado -->
         <canvas id="gameCanvas" width="850" height="420"></canvas>
 
-        <!-- Painel de estatísticas no jogo -->
+        <!-- Painel de estatísticas com o novo Radar Aéreo -->
         <div id="hud">
             <div class="hud-card">
                 <span>ENERGIA:</span>
                 <span id="scoreText" style="color: #ffbd59;">0</span>
+            </div>
+            <div class="hud-card">
+                <span>RADAR:</span>
+                <span id="radarText" style="color: #ff3366;">🚁 PERSEGUIÇÃO</span>
             </div>
             <div class="hud-card">
                 <span>INTEGRIDADE:</span>
@@ -206,7 +205,6 @@
             </div>
         </div>
 
-        <!-- CORRIGIDO: Adicionada a classe "hidden" para iniciar oculta -->
         <div id="screen-overlay" class="hidden">
             <h2 id="overlay-title" class="win-title">TESTE CONCLUÍDO!</h2>
             <p id="overlay-desc">Você homologou o Protótipo V-1 com sucesso!</p>
@@ -233,24 +231,20 @@
         const overlayTitle = document.getElementById("overlay-title");
         const overlayDesc = document.getElementById("overlay-desc");
 
-        // Variáveis globais do ciclo
         let animationId;
         let gameOver = false;
         let score = 0;
         let lives = 3;
 
-        // Câmera deslizante (Side-scroller)
         let cameraX = 0;
-        const LEVEL_WIDTH = 3200; // Tamanho total da pista de testes
+        const LEVEL_WIDTH = 3200;
 
-        // Estado dos controles do jogador
         const keys = {
             left: false,
             right: false,
             up: false
         };
 
-        // Escutadores de eventos do teclado
         window.addEventListener("keydown", (e) => {
             if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") keys.right = true;
             if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") keys.left = true;
@@ -273,7 +267,7 @@
         // ENTIDADES DO JOGO
         // ==========================================
 
-        // O Jogador (Protótipo Vermelho V-1)
+        // Jogador (Protótipo Vermelho V-1)
         const player = {
             x: 60,
             y: 280,
@@ -298,22 +292,16 @@
             },
 
             update() {
-                // Movimento Horizontal
                 if (keys.right) this.vx = this.speed;
                 else if (keys.left) this.vx = -this.speed;
                 else this.vx = 0;
 
-                // Gravidade
                 this.vy += this.gravity;
-
-                // Aplicação da Velocidade
                 this.x += this.vx;
                 this.y += this.vy;
 
-                // Limites do Nível (Esquerda)
                 if (this.x < 0) this.x = 0;
 
-                // Atualizar Efeito de Invulnerabilidade após levar dano
                 if (this.invulnerable) {
                     this.invulnerableTimer--;
                     if (this.invulnerableTimer <= 0) {
@@ -360,7 +348,367 @@
             }
         };
 
+        // NOVO: Helicóptero Policial perseguindo o carro
+        const policeHelicopter = {
+            x: 10,
+            y: 55,
+            width: 72,
+            height: 22,
+            chaseSpeed: 0.04, // Suavidade da perseguição
+
+            reset() {
+                this.x = 10;
+                this.y = 55;
+            },
+
+            update(targetPlayer) {
+                // O helicóptero tenta ficar sempre um pouco atrás e acima do carro
+                const targetX = targetPlayer.x - 45;
+                this.x += (targetX - this.x) * this.chaseSpeed;
+
+                // Efeito suave de flutuação no ar (sobe e desce levemente)
+                this.y = 55 + Math.sin(Date.now() / 220) * 6;
+            },
+
+            draw(cameraX, targetPlayer) {
+                const drawX = this.x - cameraX;
+                const drawY = this.y;
+
+                // 1. HOLOFOTE DE LUZ PERSEGUINDO O CARRO
+                const playerCenterX = (targetPlayer.x - cameraX) + targetPlayer.width / 2;
+                const playerCenterY = targetPlayer.y + targetPlayer.height / 2;
+
+                ctx.save();
+                ctx.fillStyle = "rgba(255, 250, 160, 0.22)"; // Luz amarela transparente
+                ctx.beginPath();
+                ctx.moveTo(drawX + 42, drawY + this.height); // Sai da barriga do helicóptero
+                ctx.lineTo(playerCenterX - 48, playerCenterY + 14); // Borda esquerda da luz no carro
+                ctx.lineTo(playerCenterX + 48, playerCenterY + 14); // Borda direita da luz no carro
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+
+                // 2. CAUDA DO HELICÓPTERO
+                ctx.fillStyle = "#1f2937";
+                ctx.fillRect(drawX - 18, drawY + 7, 30, 6);
+                // Leme vertical na ponta da cauda
+                ctx.fillRect(drawX - 22, drawY + 1, 6, 14);
+
+                // Hélice traseira girando
+                ctx.strokeStyle = "#9ca3af";
+                ctx.lineWidth = 2;
+                const tailSpin = Math.sin(Date.now() / 20) * 8;
+                ctx.beginPath();
+                ctx.moveTo(drawX - 20, drawY + 8 - tailSpin);
+                ctx.lineTo(drawX - 20, drawY + 8 + tailSpin);
+                ctx.stroke();
+
+                // 3. CORPO DO HELICÓPTERO POLICIAL (Preto e Branco)
+                ctx.fillStyle = "#111827";
+                ctx.beginPath();
+                ctx.roundRect(drawX + 8, drawY, 46, this.height, [8]);
+                ctx.fill();
+
+                // Faixa branca policial
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(drawX + 14, drawY + 10, 32, 6);
+
+                // Vidro frontal da cabine
+                ctx.fillStyle = "#38bdf8";
+                ctx.beginPath();
+                ctx.roundRect(drawX + 36, drawY + 3, 16, 9, [2, 8, 2, 2]);
+                ctx.fill();
+
+                // Esquis de pouso (pernas)
+                ctx.strokeStyle = "#9ca3af";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(drawX + 18, drawY + this.height);
+                ctx.lineTo(drawX + 15, drawY + this.height + 5);
+                ctx.moveTo(drawX + 42, drawY + this.height);
+                ctx.lineTo(drawX + 45, drawY + this.height + 5);
+                ctx.moveTo(drawX + 10, drawY + this.height + 5);
+                ctx.lineTo(drawX + 52, drawY + this.height + 5);
+                ctx.stroke();
+
+                // 4. SIRENE POLICIAL PISCANDO (Vermelho e Azul)
+                const isRed = Math.floor(Date.now() / 140) % 2 === 0;
+                ctx.fillStyle = isRed ? "#ff0033" : "#0066ff";
+                ctx.beginPath();
+                ctx.arc(drawX + 30, drawY + this.height + 2, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 5. HÉLICE PRINCIPAL NO TOPO GIRANDO
+                ctx.fillStyle = "#4b5563";
+                ctx.fillRect(drawX + 29, drawY - 5, 4, 5); // Eixo
+
+                const rotorRadius = Math.sin(Date.now() / 25) * 48;
+                ctx.strokeStyle = "#e5e7eb";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(drawX + 31 - rotorRadius, drawY - 5);
+                ctx.lineTo(drawX + 31 + rotorRadius, drawY - 5);
+                ctx.stroke();
+            }
+        };
+
         let platforms = [];
         let coins = [];
         let obstacles = [];
-        let finishLine = { x
+        let finishLine = { x: 3050, y: 0, width: 40, height: 420 };
+
+        function initLevel() {
+            platforms = [
+                { x: 0, y: 360, width: 900, height: 60 },
+                { x: 1000, y: 360, width: 800, height: 60 },
+                { x: 1900, y: 360, width: 1300, height: 60 },
+
+                { x: 300, y: 270, width: 180, height: 18 },
+                { x: 550, y: 200, width: 200, height: 18 },
+                { x: 1100, y: 270, width: 160, height: 18 },
+                { x: 1350, y: 200, width: 180, height: 18 },
+                { x: 1600, y: 140, width: 180, height: 18 },
+                { x: 2000, y: 270, width: 220, height: 18 },
+                { x: 2350, y: 200, width: 200, height: 18 },
+                { x: 2650, y: 270, width: 250, height: 18 }
+            ];
+
+            coins = [
+                { x: 350, y: 230, collected: false },
+                { x: 400, y: 230, collected: false },
+                { x: 600, y: 160, collected: false },
+                { x: 650, y: 160, collected: false },
+                { x: 950, y: 320, collected: false },
+                { x: 1150, y: 230, collected: false },
+                { x: 1400, y: 160, collected: false },
+                { x: 1680, y: 100, collected: false },
+                { x: 2050, y: 230, collected: false },
+                { x: 2120, y: 230, collected: false },
+                { x: 2400, y: 160, collected: false },
+                { x: 2750, y: 230, collected: false }
+            ];
+
+            obstacles = [
+                { x: 450, y: 340, width: 45, height: 20, vx: 2, minX: 400, maxX: 750, type: 'car' },
+                { x: 1200, y: 340, width: 45, height: 20, vx: 2.5, minX: 1050, maxX: 1600, type: 'car' },
+                { x: 2100, y: 340, width: 45, height: 20, vx: 3, minX: 1950, maxX: 2500, type: 'car' },
+
+                { x: 600, y: 192, width: 30, height: 8, type: 'oil' },
+                { x: 1420, y: 192, width: 30, height: 8, type: 'oil' },
+                { x: 2420, y: 192, width: 30, height: 8, type: 'oil' }
+            ];
+        }
+
+        // ==========================================
+        // LÓGICA PRINCIPAL (UPDATE)
+        // ==========================================
+
+        function update() {
+            if (gameOver) return;
+
+            player.update();
+            policeHelicopter.update(player); // Atualiza a perseguição do helicóptero
+
+            player.grounded = false;
+            platforms.forEach(plat => {
+                if (
+                    player.x < plat.x + plat.width &&
+                    player.x + player.width > plat.x &&
+                    player.y + player.height >= plat.y &&
+                    player.y + player.height <= plat.y + plat.height + 10 &&
+                    player.vy >= 0
+                ) {
+                    player.grounded = true;
+                    player.vy = 0;
+                    player.y = plat.y - player.height;
+                }
+            });
+
+            if (player.y > canvas.height + 50) {
+                takeDamage(true);
+            }
+
+            coins.forEach(coin => {
+                if (!coin.collected) {
+                    let cx = player.x + player.width / 2;
+                    let cy = player.y + player.height / 2;
+                    let dist = Math.hypot(cx - coin.x, cy - coin.y);
+
+                    if (dist < player.width / 2 + 10) {
+                        coin.collected = true;
+                        score += 50;
+                        scoreText.textContent = score;
+                    }
+                }
+            });
+
+            obstacles.forEach(obs => {
+                if (obs.type === 'car') {
+                    obs.x += obs.vx;
+                    if (obs.x <= obs.minX || obs.x + obs.width >= obs.maxX) {
+                        obs.vx *= -1;
+                    }
+                }
+
+                if (
+                    !player.invulnerable &&
+                    player.x < obs.x + obs.width &&
+                    player.x + player.width > obs.x &&
+                    player.y < obs.y + obs.height &&
+                    player.y + player.height > obs.y
+                ) {
+                    takeDamage(false);
+                }
+            });
+
+            if (player.x + player.width >= finishLine.x) {
+                endGame(true);
+            }
+
+            cameraX = player.x - 150;
+            if (cameraX < 0) cameraX = 0;
+            if (cameraX > LEVEL_WIDTH - canvas.width) cameraX = LEVEL_WIDTH - canvas.width;
+        }
+
+        function takeDamage(instantFall) {
+            lives--;
+            updateLivesUI();
+
+            if (lives <= 0) {
+                endGame(false);
+            } else {
+                player.invulnerable = true;
+                player.invulnerableTimer = 90;
+                player.x = Math.max(60, player.x - 150);
+                player.y = 200;
+                player.vy = 0;
+            }
+        }
+
+        function updateLivesUI() {
+            let hearts = "";
+            for (let i = 0; i < lives; i++) hearts += "❤️";
+            livesText.textContent = hearts || "💥";
+        }
+
+        function endGame(isWin) {
+            gameOver = true;
+            overlay.classList.remove("hidden");
+
+            if (isWin) {
+                overlayTitle.textContent = "PROTÓTIPO HOMOLOGADO!";
+                overlayTitle.className = "win-title";
+                overlayDesc.textContent = `Você escapou do helicóptero! Energia calibrada: ${score} pontos.`;
+            } else {
+                overlayTitle.textContent = "TESTE INTERROMPIDO!";
+                overlayTitle.className = "lose-title";
+                overlayDesc.textContent = "O Protótipo V-1 sofreu danos na pista suspensa.";
+            }
+        }
+
+        function restartGame() {
+            score = 0;
+            lives = 3;
+            gameOver = false;
+            scoreText.textContent = score;
+            updateLivesUI();
+            player.reset();
+            policeHelicopter.reset();
+            initLevel();
+            overlay.classList.add("hidden");
+            
+            cancelAnimationFrame(animationId);
+            gameLoop();
+        }
+
+        // ==========================================
+        // RENDERIZAÇÃO GRÁFICA (DRAW)
+        // ==========================================
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Prédios da cidade ao fundo
+            ctx.fillStyle = "#152238";
+            for (let i = 0; i < 15; i++) {
+                let bgX = (i * 250) - cameraX * 0.3;
+                ctx.fillRect(bgX, 150, 120, 250);
+            }
+
+            // 2. Pistas suspensas
+            platforms.forEach(plat => {
+                let drawX = plat.x - cameraX;
+                ctx.fillStyle = "#2c3e50";
+                ctx.fillRect(drawX, plat.y, plat.width, plat.height);
+                ctx.fillStyle = "#ffbd59";
+                ctx.fillRect(drawX, plat.y, plat.width, 4);
+            });
+
+            // 3. Células de Energia
+            coins.forEach(coin => {
+                if (!coin.collected) {
+                    let drawX = coin.x - cameraX;
+                    ctx.beginPath();
+                    ctx.arc(drawX, coin.y, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = "#ffbd59";
+                    ctx.fill();
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = "#ffbd59";
+                    ctx.closePath();
+                    ctx.shadowBlur = 0;
+                }
+            });
+
+            // 4. Obstáculos
+            obstacles.forEach(obs => {
+                let drawX = obs.x - cameraX;
+
+                if (obs.type === 'car') {
+                    ctx.fillStyle = "#9c27b0";
+                    ctx.beginPath();
+                    ctx.roundRect(drawX, obs.y, obs.width, obs.height, [3]);
+                    ctx.fill();
+
+                    ctx.fillStyle = "#111";
+                    ctx.fillRect(drawX + 8, obs.y + 2, 15, 6);
+                } else if (obs.type === 'oil') {
+                    ctx.fillStyle = "#000";
+                    ctx.beginPath();
+                    ctx.ellipse(drawX + obs.width/2, obs.y + obs.height/2, obs.width/2, obs.height/2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // 5. Portal de Homologação (Linha de Chegada)
+            let finishDrawX = finishLine.x - cameraX;
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(finishDrawX, 0, 20, canvas.height);
+            ctx.fillStyle = "#000";
+            for (let y = 0; y < canvas.height; y += 20) {
+                ctx.fillRect(finishDrawX + (y % 40 === 0 ? 0 : 10), y, 10, 10);
+            }
+
+            // 6. Jogador
+            player.draw(cameraX);
+
+            // 7. Helicóptero Policial e Holofote iluminando o carro
+            policeHelicopter.draw(cameraX, player);
+        }
+
+        // ==========================================
+        // GAME LOOP (Ciclo de Animação)
+        // ==========================================
+
+        function gameLoop() {
+            update();
+            draw();
+            if (!gameOver) {
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        initLevel();
+        gameLoop();
+    </script>
+</body>
+</html>
