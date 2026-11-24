@@ -1,714 +1,1731 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Operação Circuito Celeste - Perseguição Aérea</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monster Truck 2D - Corrida no Vulcão</title>
 
-        body {
-            background-color: #0b0c10;
-            color: #66fcf1;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
+  <!-- ===================================================================== -->
+  <!-- 1. ESTILOS VISUAIS DA PÁGINA (CSS)                                    -->
+  <!-- ===================================================================== -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-        header {
-            margin-bottom: 12px;
-            text-align: center;
-            max-width: 820px;
-            padding: 0 15px;
-        }
+    body {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
 
-        h1 {
-            font-size: 2rem;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: #45f3ff;
-            text-shadow: 0 0 12px rgba(69, 243, 255, 0.6);
-        }
+    .container-jogo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      max-width: 820px;
+      width: 100%;
+    }
 
-        p.subtitle {
-            font-size: 0.92rem;
-            color: #c5c6c7;
-            margin-top: 6px;
-            line-height: 1.4;
-        }
+    h1 {
+      font-size: 1.8rem;
+      color: #facc15;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
 
-        p.subtitle strong {
-            color: #ffbd59;
-        }
+    /* Barra superior com Pontos, Barras de Ouro e Vidas */
+    .painel-status {
+      width: 800px;
+      max-width: 100%;
+      background-color: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
 
-        #game-wrapper {
-            position: relative;
-            border: 4px solid #45f3ff;
-            border-radius: 12px;
-            box-shadow: 0 0 25px rgba(69, 243, 255, 0.3), inset 0 0 15px rgba(0,0,0,0.8);
-            background: #000;
-        }
+    /* Moldura do Canvas */
+    .area-canvas {
+      position: relative;
+      width: 800px;
+      max-width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+      border: 3px solid #f97316;
+    }
 
-        canvas {
-            display: block;
-            border-radius: 8px;
-            background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
-        }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background-color: #1c1917;
+      cursor: pointer;
+    }
 
-        /* Heads Up Display (HUD) */
-        #hud {
-            position: absolute;
-            top: 15px;
-            left: 20px;
-            right: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            pointer-events: none;
-            font-size: 1rem;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px #000;
-        }
+    /* Tela sobreposta de Vitória ou Derrota */
+    .tela-final {
+      position: absolute;
+      inset: 0;
+      background-color: rgba(15, 23, 42, 0.88);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+      z-index: 10;
+    }
 
-        .hud-card {
-            background: rgba(11, 12, 16, 0.78);
-            padding: 8px 16px;
-            border-radius: 20px;
-            border: 1px solid rgba(69, 243, 255, 0.4);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+    .tela-final.oculto {
+      display: none;
+    }
 
-        /* Overlay para Game Over e Vitória */
-        #screen-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(11, 12, 16, 0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-radius: 8px;
-            backdrop-filter: blur(5px);
-            z-index: 10;
-            text-align: center;
-            padding: 20px;
-        }
+    .caixa-mensagem {
+      background-color: #1e293b;
+      border: 2px solid #facc15;
+      border-radius: 14px;
+      padding: 26px 34px;
+      max-width: 450px;
+      width: 100%;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    }
 
-        #screen-overlay.hidden {
-            display: none !important;
-        }
+    .caixa-mensagem h2 {
+      font-size: 1.9rem;
+      margin-bottom: 10px;
+    }
 
-        #overlay-title {
-            font-size: 2.8rem;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+    .caixa-mensagem p {
+      font-size: 1.02rem;
+      color: #cbd5e1;
+      margin-bottom: 12px;
+      line-height: 1.45;
+    }
 
-        .win-title {
-            color: #45f3ff;
-            text-shadow: 0 0 20px #45f3ff;
-        }
+    .pontuacao-final {
+      font-size: 1.25rem;
+      color: #facc15 !important;
+      margin-bottom: 20px !important;
+    }
 
-        .lose-title {
-            color: #ff3366;
-            text-shadow: 0 0 20px #ff3366;
-        }
+    #btnReiniciar {
+      background-color: #22c55e;
+      color: #052e16;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 26px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
 
-        #overlay-desc {
-            font-size: 1.15rem;
-            color: #fff;
-            margin-bottom: 25px;
-        }
+    #btnReiniciar:hover {
+      background-color: #4ade80;
+      transform: scale(1.05);
+    }
 
-        .btn-restart {
-            padding: 12px 32px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: #0b0c10;
-            background: #45f3ff;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(69, 243, 255, 0.6);
-            transition: all 0.2s ease;
-        }
+    #btnReiniciar:active {
+      transform: scale(0.98);
+    }
 
-        .btn-restart:hover {
-            transform: scale(1.08);
-            background: #66fcf1;
-            box-shadow: 0 0 25px rgba(102, 252, 241, 0.9);
-        }
+    /* Barra inferior com instruções */
+    .controles-info {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      font-size: 0.92rem;
+      color: #cbd5e1;
+      background-color: #1e293b;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      text-align: center;
+    }
 
-        /* Rodapé com Instruções */
-        footer {
-            margin-top: 15px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            font-size: 0.9rem;
-            color: #c5c6c7;
-        }
+    /* Botões táteis para celulares/tablets */
+    .controles-touch {
+      display: none;
+      width: 100%;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 4px;
+    }
 
-        .key-badge {
-            background: #1f2833;
-            border: 1px solid #45f3ff;
-            color: #fff;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-    </style>
+    .grupo-direcional {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-touch {
+      background-color: #1e293b;
+      color: #facc15;
+      border: 2px solid #facc15;
+      border-radius: 12px;
+      padding: 14px 22px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .btn-touch:active {
+      background-color: #facc15;
+      color: #0f172a;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.35rem;
+      }
+      .painel-status {
+        font-size: 0.95rem;
+        padding: 8px 12px;
+      }
+      .controles-touch {
+        display: flex;
+      }
+    }
+  </style>
 </head>
 <body>
 
-    <header>
-        <h1>OPERAÇÃO CIRCUITO CELESTE</h1>
-        <p class="subtitle">
-            <strong>Missão:</strong> Pilote o <strong>Protótipo Vermelho V-1</strong>, colete as <strong>Células de Energia</strong> 
-            e escape do holofote do <strong>Helicóptero Policial</strong> até o Portal de Homologação!
-        </p>
+  <!-- ===================================================================== -->
+  <!-- 2. ESTRUTURA DA PÁGINA (HTML)                                         -->
+  <!-- ===================================================================== -->
+  <main class="container-jogo">
+    <!-- Título do jogo (personalize aqui!) -->
+    <h1 id="tituloJogo">🌋 Monster Truck 2D: Corrida no Vulcão</h1>
+
+    <!-- Placar superior -->
+    <header class="painel-status">
+      <div class="status-item">⭐ Pontos: <span id="valorPontos">0</span></div>
+      <div class="status-item">🟨 Barras de Ouro: <span id="valorOuro">0/15</span></div>
+      <div class="status-item">❤️ Vidas: <span id="valorVidas">3</span></div>
     </header>
 
-    <div id="game-wrapper">
-        <canvas id="gameCanvas" width="850" height="420"></canvas>
+    <!-- Área do Canvas 800x450 e Tela Final -->
+    <div class="area-canvas">
+      <canvas id="jogoCanvas" width="800" height="450"></canvas>
 
-        <!-- Painel de estatísticas com o novo Radar Aéreo -->
-        <div id="hud">
-            <div class="hud-card">
-                <span>ENERGIA:</span>
-                <span id="scoreText" style="color: #ffbd59;">0</span>
-            </div>
-            <div class="hud-card">
-                <span>RADAR:</span>
-                <span id="radarText" style="color: #ff3366;">🚁 PERSEGUIÇÃO</span>
-            </div>
-            <div class="hud-card">
-                <span>INTEGRIDADE:</span>
-                <span id="livesText" style="color: #ff3366;">❤️❤️❤️</span>
-            </div>
+      <!-- Tela de Vitória ou Derrota -->
+      <div id="telaFinal" class="tela-final oculto">
+        <div class="caixa-mensagem">
+          <h2 id="tituloFinal">Fim de Jogo!</h2>
+          <p id="textoFinal">Você perdeu todas as suas vidas.</p>
+          <p class="pontuacao-final">Pontuação Final: <strong id="pontosFinais">0</strong></p>
+          <button id="btnReiniciar" type="button">🔄 Jogar Novamente</button>
         </div>
-
-        <div id="screen-overlay" class="hidden">
-            <h2 id="overlay-title" class="win-title">TESTE CONCLUÍDO!</h2>
-            <p id="overlay-desc">Você homologou o Protótipo V-1 com sucesso!</p>
-            <button class="btn-restart" onclick="restartGame()">INICIAR NOVO TESTE</button>
-        </div>
+      </div>
     </div>
 
-    <footer>
-        <div><span class="key-badge">A</span> / <span class="key-badge">D</span> ou <span class="key-badge">◄</span> <span class="key-badge">►</span> Acelerar / Ré</div>
-        <div><span class="key-badge">ESPAÇO</span> ou <span class="key-badge">▲</span> / <span class="key-badge">W</span> Propulsor de Salto</div>
-        <div>Equipe de Testes: <strong>Piloto V-1</strong></div>
+    <!-- Controles táteis para telas pequenas -->
+    <div class="controles-touch" aria-label="Controles na tela">
+      <div class="grupo-direcional">
+        <button id="btnEsq" class="btn-touch" type="button">◀ Ré</button>
+        <button id="btnDir" class="btn-touch" type="button">Acelerar ▶</button>
+      </div>
+      <button id="btnPular" class="btn-touch" type="button">▲ Pular</button>
+    </div>
+
+    <!-- Instruções de controle -->
+    <footer class="controles-info">
+      <span><strong>Dirigir:</strong> Setas ◀ ▶ ou A / D</span>
+      <span>•</span>
+      <span><strong>Pular:</strong> Espaço (ou W / ▲)</span>
+      <span>•</span>
+      <span><strong>Desafio Final:</strong> Pule 3x no teto do Vilão Gigante e cruze a linha quadriculada!</span>
     </footer>
+  </main>
 
-    <script>
-        // ==========================================
-        // CONFIGURAÇÕES E ESTADO DO JOGO
-        // ==========================================
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+  <!-- ===================================================================== -->
+  <!-- 3. LÓGICA DO JOGO (JAVASCRIPT PURO)                                   -->
+  <!-- ===================================================================== -->
+  <script>
+    // ========================================================================
+    // 1. ÁREA DE PERSONALIZAÇÃO (MUDE AQUI PARA CUSTOMIZAR SEU JOGO!)
+    // ========================================================================
+    const CONFIG = {
+      // Dimensões da pista e câmera
+      larguraFase: 3320,         // Comprimento total da pista em pixels
+      posicaoChegada: 3170,      // Posição X da linha de chegada quadriculada
 
-        const scoreText = document.getElementById("scoreText");
-        const livesText = document.getElementById("livesText");
-        const overlay = document.getElementById("screen-overlay");
-        const overlayTitle = document.getElementById("overlay-title");
-        const overlayDesc = document.getElementById("overlay-desc");
+      // Física e movimentação do Carro Monstro
+      velocidadeJogador: 5.5,    // Velocidade horizontal do carro monstro
+      forcaPulo: -13.5,          // Altura do pulo (quanto mais negativo, mais alto)
+      gravidade: 0.6,            // Força da gravidade que puxa o carro para baixo
 
-        let animationId;
-        let gameOver = false;
-        let score = 0;
-        let lives = 3;
+      // Regras, Pontuação e Chefão Final
+      vidasIniciais: 3,          // Quantidade de vidas do jogador
+      vidasChefao: 3,            // Quantos pulos no teto são necessários para derrotar o Vilão Gigante
+      pontosPorBarra: 100,       // Pontos ganhos por cada barra de ouro coletada
+      pontosPorInimigo: 200,     // Pontos ganhos ao esmagar um carro vermelho comum
+      pontosPorChefao: 1000,     // Pontos ganhos ao derrotar o Vilão Gigante
+      bonusPorVida: 250,         // Bônus por cada vida restante ao cruzar a chegada
+      bonusTodasBarras: 500,     // Bônus extra se coletar todas as 15 barras de ouro
 
-        let cameraX = 0;
-        const LEVEL_WIDTH = 3200;
+      // Cores do cenário vulcânico e dos veículos
+      corCeuTopo: "#120a0a",     // Cinza vulcânico escuro no topo
+      corCeuMeio: "#450a0a",     // Vermelho escuro no meio do céu
+      corCeuBase: "#ea580c",     // Laranja incandescente no horizonte
+      corCarroJogador: "#2563eb",// Azul vibrante do seu Monster Truck
+      corFaixaJogador: "#facc15",// Faixa amarela esportiva do seu carro
+      corCarroInimigo: "#dc2626",// Vermelho dos Monster Trucks inimigos
+      corRocha: "#1c1917",       // Basalto/obsidiana escura das plataformas
+      corLava: "#f97316",        // Magma laranja-avermelhado
+      corLavaBrilho: "#facc15",  // Núcleo amarelo brilhante da lava
+      corEspinho: "#292524"      // Rocha vulcânica escura dos espinhos
+    };
 
-        const keys = {
-            left: false,
-            right: false,
-            up: false
-        };
+    // ========================================================================
+    // 2. CONEXÃO COM OS ELEMENTOS HTML
+    // ========================================================================
+    const canvas = document.getElementById("jogoCanvas");
+    const ctx = canvas.getContext("2d");
 
-        window.addEventListener("keydown", (e) => {
-            if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") keys.right = true;
-            if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") keys.left = true;
-            if (e.key === "ArrowUp" || e.key === "w" || e.key === "W" || e.key === " ") {
-                if (!keys.up && player.grounded) {
-                    player.vy = player.jumpPower;
-                    player.grounded = false;
-                }
-                keys.up = true;
-            }
+    const elPontos = document.getElementById("valorPontos");
+    const elOuro = document.getElementById("valorOuro");
+    const elVidas = document.getElementById("valorVidas");
+
+    const telaFinal = document.getElementById("telaFinal");
+    const tituloFinal = document.getElementById("tituloFinal");
+    const textoFinal = document.getElementById("textoFinal");
+    const pontosFinais = document.getElementById("pontosFinais");
+    const btnReiniciar = document.getElementById("btnReiniciar");
+
+    // ========================================================================
+    // 3. ESTADO DO JOGO, CÂMERA E MAPA DA PISTA (3200px)
+    // ========================================================================
+    let pontos = 0;
+    let vidas = CONFIG.vidasIniciais;
+    let jogoEncerrado = false;
+    let cameraX = 0;
+    let mensagemAviso = "";
+    let tempoAviso = 0;
+
+    // Carro Monstro Vilão Gigante (Chefão no final da pista)
+    const chefao = {
+      x: 2910,
+      y: 267,         // Base alinhada com o chão (y = 405) -> 405 - 138 = 267
+      largura: 204,   // 3x maior que o jogador (68 * 3)
+      altura: 138,    // 3x maior que o jogador (46 * 3)
+      velX: -1.0,     // Leve patrulha ameaçadora perto da chegada
+      minX: 2875,
+      maxX: 2945,
+      anguloRoda: 0,
+      vidas: CONFIG.vidasChefao,
+      maxVidas: CONFIG.vidasChefao,
+      invencivel: 0,
+      treme: 0,
+      derrotado: false,
+      avisoMostrado: false
+    };
+
+    // Personagem Principal: Carro Monstro Azul
+    const jogador = {
+      x: 60,
+      y: 350,
+      largura: 68,
+      altura: 46,
+      velX: 0,
+      velY: 0,
+      noChao: false,
+      direcao: 1,       // 1 = direita, -1 = esquerda
+      anguloRoda: 0,    // Controla o giro das rodas gigantes
+      invencivel: 0     // Frames de invencibilidade piscando após dano
+    };
+
+    // Plataformas elevadas e chão contínuo de 3200px
+    const plataformas = [
+      { x: 0,    y: 405, largura: CONFIG.larguraFase, altura: 45 }, // Chão principal
+      { x: 400,  y: 315, largura: 200, altura: 20 }, // Plataforma 1
+      { x: 980,  y: 315, largura: 190, altura: 20 }, // Plataforma 2
+      { x: 1320, y: 315, largura: 180, altura: 20 }, // Plataforma 3 (degrau)
+      { x: 1560, y: 225, largura: 240, altura: 20 }, // Plataforma 4 (alta)
+      { x: 2080, y: 315, largura: 280, altura: 20 }, // Plataforma 5 (larga com inimigo)
+      { x: 2420, y: 230, largura: 190, altura: 20 }  // Plataforma 6 (alta final)
+    ];
+
+    // Barreiras de espinhos no chão ao longo da pista
+    const espinhos = [
+      { x: 1045, y: 389, largura: 54, altura: 16 },
+      { x: 1880, y: 389, largura: 54, altura: 16 },
+      { x: 2660, y: 389, largura: 54, altura: 16 }
+    ];
+    // Nuvens de fumaça vulcânica espalhadas pelo céu (usam parallax)
+    const nuvens = [
+      { x: 120,  y: 65, escala: 1.0 },
+      { x: 450,  y: 45, escala: 0.85 },
+      { x: 820,  y: 75, escala: 1.15 },
+      { x: 1200, y: 50, escala: 0.9 },
+      { x: 1580, y: 70, escala: 1.1 },
+      { x: 1960, y: 45, escala: 0.95 },
+      { x: 2350, y: 68, escala: 1.2 },
+      { x: 2750, y: 52, escala: 1.0 }
+    ];
+
+    // Cadeia de montanhas vulcânicas secundárias (parallax lento)
+    const montanhas = [
+      { x: 40,   largura: 260, altura: 165 },
+      { x: 310,  largura: 290, altura: 195 },
+      { x: 830,  largura: 280, altura: 175 },
+      { x: 1140, largura: 320, altura: 205 },
+      { x: 1490, largura: 270, altura: 160 }
+    ];
+
+    // Listas dinâmicas recriadas a cada nova corrida
+    let barrasOuro = [];
+    let inimigos = [];
+    let particulas = [];
+    let brasas = [];
+    let bolasLava = [];
+    let timerErupcao = 0;
+
+    // ========================================================================
+    // 4. CONTROLES DE TECLADO E TOQUE
+    // ========================================================================
+    const teclas = {
+      esquerda: false,
+      direita: false
+    };
+
+    function executarPulo() {
+      if (jogador.noChao && !jogoEncerrado) {
+        jogador.velY = CONFIG.forcaPulo;
+        jogador.noChao = false;
+      }
+    }
+
+    canvas.addEventListener("mousedown", () => window.focus());
+
+    window.addEventListener("keydown", (evento) => {
+      const tecla = evento.key.toLowerCase();
+
+      if (tecla === "arrowleft" || tecla === "a") teclas.esquerda = true;
+      if (tecla === "arrowright" || tecla === "d") teclas.direita = true;
+
+      if (evento.code === "Space" || tecla === "arrowup" || tecla === "w") {
+        evento.preventDefault();
+        executarPulo();
+      }
+    });
+
+    window.addEventListener("keyup", (evento) => {
+      const tecla = evento.key.toLowerCase();
+
+      if (tecla === "arrowleft" || tecla === "a") teclas.esquerda = false;
+      if (tecla === "arrowright" || tecla === "d") teclas.direita = false;
+    });
+
+    // Botões táteis para celulares/tablets
+    function configurarBotaoTouch(idBotao, aoPressionar, aoSoltar) {
+      const btn = document.getElementById(idBotao);
+      if (!btn) return;
+      btn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        aoPressionar();
+      }, { passive: false });
+      btn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        if (aoSoltar) aoSoltar();
+      }, { passive: false });
+      btn.addEventListener("mousedown", aoPressionar);
+      if (aoSoltar) {
+        btn.addEventListener("mouseup", aoSoltar);
+        btn.addEventListener("mouseleave", aoSoltar);
+      }
+    }
+
+    configurarBotaoTouch("btnEsq", () => { teclas.esquerda = true; }, () => { teclas.esquerda = false; });
+    configurarBotaoTouch("btnDir", () => { teclas.direita = true; }, () => { teclas.direita = false; });
+    configurarBotaoTouch("btnPular", executarPulo);
+
+    // ========================================================================
+    // 5. INICIALIZAÇÃO E REINÍCIO DA CORRIDA
+    // ========================================================================
+    function iniciarJogo() {
+      pontos = 0;
+      vidas = CONFIG.vidasIniciais;
+      jogoEncerrado = false;
+      cameraX = 0;
+      mensagemAviso = "";
+      tempoAviso = 0;
+      particulas = [];
+      bolasLava = [];
+      timerErupcao = 0;
+
+      // Reinicia o Carro Monstro Vilão Gigante
+      chefao.x = 2910;
+      chefao.y = 267;
+      chefao.velX = -1.0;
+      chefao.anguloRoda = 0;
+      chefao.vidas = CONFIG.vidasChefao;
+      chefao.invencivel = 0;
+      chefao.treme = 0;
+      chefao.derrotado = false;
+      chefao.avisoMostrado = false;
+
+      // Cria brasas e faíscas flutuando na atmosfera vulcânica
+      brasas = [];
+      for (let i = 0; i < 45; i++) {
+        brasas.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          raio: 1.2 + Math.random() * 2.5,
+          velY: -(0.5 + Math.random() * 1.4),
+          fase: Math.random() * Math.PI * 2,
+          cor: Math.random() > 0.4 ? "#f97316" : "#facc15"
         });
+      }
 
-        window.addEventListener("keyup", (e) => {
-            if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") keys.right = false;
-            if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") keys.left = false;
-            if (e.key === "ArrowUp" || e.key === "w" || e.key === "W" || e.key === " ") keys.up = false;
+      // Reposiciona o Carro Monstro Azul na largada
+      jogador.x = 60;
+      jogador.y = 350;
+      jogador.velX = 0;
+      jogador.velY = 0;
+      jogador.noChao = false;
+      jogador.direcao = 1;
+      jogador.anguloRoda = 0;
+      jogador.invencivel = 0;
+
+      // 15 Barras de Ouro espalhadas pela pista e plataformas
+      barrasOuro = [
+        // Trecho 1 (Aquecimento)
+        { x: 260,  y: 372, largura: 32, altura: 18, coletada: false },
+        { x: 445,  y: 282, largura: 32, altura: 18, coletada: false },
+        { x: 525,  y: 282, largura: 32, altura: 18, coletada: false },
+
+        // Trecho 2 (Primeiro inimigo e espinhos)
+        { x: 810,  y: 372, largura: 32, altura: 18, coletada: false },
+        { x: 1020, y: 282, largura: 32, altura: 18, coletada: false },
+        { x: 1105, y: 282, largura: 32, altura: 18, coletada: false },
+
+        // Trecho 3 (Plataformas altas)
+        { x: 1395, y: 282, largura: 32, altura: 18, coletada: false },
+        { x: 1620, y: 192, largura: 32, altura: 18, coletada: false },
+        { x: 1720, y: 192, largura: 32, altura: 18, coletada: false },
+        { x: 1892, y: 310, largura: 32, altura: 18, coletada: false },
+
+        // Trecho 4 (Plataforma com patrulha e salto alto)
+        { x: 2130, y: 282, largura: 32, altura: 18, coletada: false },
+        { x: 2280, y: 282, largura: 32, altura: 18, coletada: false },
+        { x: 2465, y: 197, largura: 32, altura: 18, coletada: false },
+        { x: 2545, y: 197, largura: 32, altura: 18, coletada: false },
+
+        // Trecho 5 (Reta final)
+        { x: 2850, y: 310, largura: 32, altura: 18, coletada: false }
+      ];
+
+      // Carros Monstros Vermelhos patrulhando a pista e plataformas
+      inimigos = [
+        { x: 750,  y: 359, largura: 68, altura: 46, velX: 2.3, minX: 650,  maxX: 980,  anguloRoda: 0, vivo: true },
+        { x: 1520, y: 359, largura: 68, altura: 46, velX: 2.6, minX: 1360, maxX: 1820, anguloRoda: 0, vivo: true },
+        { x: 2160, y: 269, largura: 64, altura: 46, velX: 1.9, minX: 2085, maxX: 2355, anguloRoda: 0, vivo: true },
+        { x: 2620, y: 359, largura: 68, altura: 46, velX: 2.4, minX: 2560, maxX: 2800, anguloRoda: 0, vivo: true }
+      ];
+
+      telaFinal.classList.add("oculto");
+      btnReiniciar.blur();
+      atualizarHUD();
+    }
+
+    btnReiniciar.addEventListener("click", iniciarJogo);
+
+    function atualizarHUD() {
+      const coletadas = barrasOuro.filter((b) => b.coletada).length;
+      elPontos.textContent = pontos;
+      elOuro.textContent = `${coletadas}/${barrasOuro.length}`;
+      elVidas.textContent = vidas;
+    }
+
+    function mostrarAviso(texto) {
+      mensagemAviso = texto;
+      tempoAviso = 110;
+    }
+
+    // Gera faíscas/partículas ao coletar ouro ou esmagar inimigo
+    function criarParticulas(x, y, cor, quantidade) {
+      for (let i = 0; i < quantidade; i++) {
+        particulas.push({
+          x: x,
+          y: y,
+          velX: (Math.random() - 0.5) * 7,
+          velY: (Math.random() - 0.8) * 6,
+          tamanho: 3 + Math.random() * 4,
+          cor: cor,
+          vida: 28
         });
+      }
+    }
 
-        // ==========================================
-        // ENTIDADES DO JOGO
-        // ==========================================
+    // ========================================================================
+    // 6. FÍSICA, COLISÕES E REGRAS DO JOGO
+    // ========================================================================
+    function verificarColisao(a, b) {
+      return (
+        a.x < b.x + b.largura &&
+        a.x + a.largura > b.x &&
+        a.y < b.y + b.altura &&
+        a.y + a.altura > b.y
+      );
+    }
 
-        // Jogador (Protótipo Vermelho V-1)
-        const player = {
-            x: 60,
-            y: 280,
-            width: 50,
-            height: 24,
-            speed: 5.5,
-            vx: 0,
-            vy: 0,
-            gravity: 0.55,
-            jumpPower: -11.5,
-            grounded: false,
-            invulnerable: false,
-            invulnerableTimer: 0,
+    function sofrerDano() {
+      if (jogador.invencivel > 0) return;
 
-            reset() {
-                this.x = 60;
-                this.y = 280;
-                this.vx = 0;
-                this.vy = 0;
-                this.grounded = false;
-                this.invulnerable = false;
-            },
+      vidas--;
+      atualizarHUD();
+      criarParticulas(jogador.x + jogador.largura / 2, jogador.y + jogador.altura / 2, "#ef4444", 12);
 
-            update() {
-                if (keys.right) this.vx = this.speed;
-                else if (keys.left) this.vx = -this.speed;
-                else this.vx = 0;
+      if (vidas <= 0) {
+        finalizarJogo(false);
+      } else {
+        jogador.invencivel = 90; // 1.5 segundo piscando invencível
+        jogador.velY = -7.5;
+        mostrarAviso("Bateu! Cuidado com os carros vermelhos e espinhos!");
+      }
+    }
 
-                this.vy += this.gravity;
-                this.x += this.vx;
-                this.y += this.vy;
+    function finalizarJogo(venceu) {
+      jogoEncerrado = true;
 
-                if (this.x < 0) this.x = 0;
+      if (venceu) {
+        const bonusVidas = vidas * CONFIG.bonusPorVida;
+        const todasBarras = barrasOuro.every((b) => b.coletada);
+        const bonusOuro = todasBarras ? CONFIG.bonusTodasBarras : 0;
 
-                if (this.invulnerable) {
-                    this.invulnerableTimer--;
-                    if (this.invulnerableTimer <= 0) {
-                        this.invulnerable = false;
-                    }
-                }
-            },
+        pontos += bonusVidas + bonusOuro;
+        atualizarHUD();
 
-            draw(cameraX) {
-                if (this.invulnerable && Math.floor(Date.now() / 100) % 2 === 0) return;
+        tituloFinal.textContent = "🏆 Vitória no Vulcão!";
+        tituloFinal.style.color = "#4ade80";
 
-                const drawX = this.x - cameraX;
-                const drawY = this.y;
+        let detalhes = `Você derrotou o Vilão Gigante, cruzou a chegada e ganhou +${bonusVidas} pts de bônus pelas vidas!`;
+        if (todasBarras) {
+          detalhes += ` Bônus Ouro Completo: +${bonusOuro} pts!`;
+        }
+        textoFinal.textContent = detalhes;
+      } else {
+        tituloFinal.textContent = "💥 Fim de Jogo!";
+        tituloFinal.style.color = "#f87171";
+        textoFinal.textContent = "Seu Carro Monstro ficou sem vidas. Tente novamente!";
+      }
 
-                // Corpo do Protótipo Vermelho V-1
-                ctx.fillStyle = "#ff3366";
-                ctx.beginPath();
-                ctx.roundRect(drawX, drawY + 6, this.width, this.height - 6, [4]);
-                ctx.fill();
+      pontosFinais.textContent = pontos;
+      telaFinal.classList.remove("oculto");
+    }
 
-                // Cabine / Vidro
-                ctx.fillStyle = "#45f3ff";
-                ctx.beginPath();
-                ctx.roundRect(drawX + 12, drawY, 22, 10, [3, 3, 0, 0]);
-                ctx.fill();
+    // Atualiza as brasas atmosféricas e as bolas de lava lançadas pelo vulcão
+    function atualizarAmbienteVulcanico() {
+      // Brasas flutuando para cima
+      for (const b of brasas) {
+        b.y += b.velY;
+        b.fase += 0.04;
+        b.x += Math.sin(b.fase) * 0.6;
 
-                // Rodas
-                ctx.fillStyle = "#111";
-                ctx.beginPath();
-                ctx.arc(drawX + 10, drawY + this.height, 6, 0, Math.PI * 2);
-                ctx.arc(drawX + this.width - 10, drawY + this.height, 6, 0, Math.PI * 2);
-                ctx.fill();
+        if (b.y < -10) {
+          b.y = canvas.height + 10;
+          b.x = Math.random() * canvas.width;
+        }
+        if (b.x < 0) b.x = canvas.width;
+        if (b.x > canvas.width) b.x = 0;
+      }
 
-                // Aros das rodas
-                ctx.fillStyle = "#aaa";
-                ctx.beginPath();
-                ctx.arc(drawX + 10, drawY + this.height, 2, 0, Math.PI * 2);
-                ctx.arc(drawX + this.width - 10, drawY + this.height, 2, 0, Math.PI * 2);
-                ctx.fill();
+      // Erupção contínua na cratera do vulcão principal (coordenadas relativas ao vulcão)
+      timerErupcao++;
+      if (timerErupcao >= 18) {
+        timerErupcao = 0;
+        const qtd = 1 + Math.floor(Math.random() * 2);
+        for (let i = 0; i < qtd; i++) {
+          bolasLava.push({
+            offsetX: (Math.random() - 0.5) * 44, // Largura da boca da cratera
+            offsetY: 0,
+            velX: (Math.random() - 0.5) * 4.4,
+            velY: -(5.5 + Math.random() * 4.2),  // Impulso para o alto
+            raio: 4 + Math.random() * 4.5,
+            rastro: []
+          });
+        }
+      }
 
-                // Faróis
-                ctx.fillStyle = "#ffbd59";
-                ctx.fillRect(drawX + this.width - 4, drawY + 10, 4, 4);
-            }
-        };
+      // Física parabólica das bolas de lava que sobem e caem de volta na cratera
+      for (let i = bolasLava.length - 1; i >= 0; i--) {
+        const bola = bolasLava[i];
+        bola.rastro.push({ x: bola.offsetX, y: bola.offsetY });
+        if (bola.rastro.length > 6) bola.rastro.shift();
 
-        // NOVO: Helicóptero Policial perseguindo o carro
-        const policeHelicopter = {
-            x: 10,
-            y: 55,
-            width: 72,
-            height: 22,
-            chaseSpeed: 0.04, // Suavidade da perseguição
+        bola.offsetX += bola.velX;
+        bola.offsetY += bola.velY;
+        bola.velY += 0.22; // Gravidade puxando a lava de volta para a cratera
 
-            reset() {
-                this.x = 10;
-                this.y = 55;
-            },
+        // Quando cai de volta na cratera (offsetY > 12), remove
+        if (bola.velY > 0 && bola.offsetY > 12) {
+          bolasLava.splice(i, 1);
+        }
+      }
+    }
 
-            update(targetPlayer) {
-                // O helicóptero tenta ficar sempre um pouco atrás e acima do carro
-                const targetX = targetPlayer.x - 45;
-                this.x += (targetX - this.x) * this.chaseSpeed;
+    function atualizar() {
+      if (jogoEncerrado) return;
 
-                // Efeito suave de flutuação no ar (sobe e desce levemente)
-                this.y = 55 + Math.sin(Date.now() / 220) * 6;
-            },
+      if (jogador.invencivel > 0) jogador.invencivel--;
+      if (tempoAviso > 0) tempoAviso--;
 
-            draw(cameraX, targetPlayer) {
-                const drawX = this.x - cameraX;
-                const drawY = this.y;
+      atualizarAmbienteVulcanico();
 
-                // 1. HOLOFOTE DE LUZ PERSEGUINDO O CARRO
-                const playerCenterX = (targetPlayer.x - cameraX) + targetPlayer.width / 2;
-                const playerCenterY = targetPlayer.y + targetPlayer.height / 2;
+      // 1. Movimento Horizontal e Giro das Rodas
+      jogador.velX = 0;
+      if (teclas.esquerda) {
+        jogador.velX = -CONFIG.velocidadeJogador;
+        jogador.direcao = -1;
+      }
+      if (teclas.direita) {
+        jogador.velX = CONFIG.velocidadeJogador;
+        jogador.direcao = 1;
+      }
 
-                ctx.save();
-                ctx.fillStyle = "rgba(255, 250, 160, 0.22)"; // Luz amarela transparente
-                ctx.beginPath();
-                ctx.moveTo(drawX + 42, drawY + this.height); // Sai da barriga do helicóptero
-                ctx.lineTo(playerCenterX - 48, playerCenterY + 14); // Borda esquerda da luz no carro
-                ctx.lineTo(playerCenterX + 48, playerCenterY + 14); // Borda direita da luz no carro
-                ctx.closePath();
-                ctx.fill();
-                ctx.restore();
+      jogador.x += jogador.velX;
+      jogador.anguloRoda += jogador.velX * 0.12;
 
-                // 2. CAUDA DO HELICÓPTERO
-                ctx.fillStyle = "#1f2937";
-                ctx.fillRect(drawX - 18, drawY + 7, 30, 6);
-                // Leme vertical na ponta da cauda
-                ctx.fillRect(drawX - 22, drawY + 1, 6, 14);
+      // Impede sair antes do início da pista ou depois do fim
+      if (jogador.x < 0) jogador.x = 0;
+      if (jogador.x + jogador.largura > CONFIG.larguraFase) {
+        jogador.x = CONFIG.larguraFase - jogador.largura;
+      }
 
-                // Hélice traseira girando
-                ctx.strokeStyle = "#9ca3af";
-                ctx.lineWidth = 2;
-                const tailSpin = Math.sin(Date.now() / 20) * 8;
-                ctx.beginPath();
-                ctx.moveTo(drawX - 20, drawY + 8 - tailSpin);
-                ctx.lineTo(drawX - 20, drawY + 8 + tailSpin);
-                ctx.stroke();
+      // Colisão lateral com plataformas
+      for (const plat of plataformas) {
+        if (verificarColisao(jogador, plat)) {
+          if (jogador.velX > 0) jogador.x = plat.x - jogador.largura;
+          if (jogador.velX < 0) jogador.x = plat.x + plat.largura;
+        }
+      }
 
-                // 3. CORPO DO HELICÓPTERO POLICIAL (Preto e Branco)
-                ctx.fillStyle = "#111827";
-                ctx.beginPath();
-                ctx.roundRect(drawX + 8, drawY, 46, this.height, [8]);
-                ctx.fill();
+      // 2. Movimento Vertical e Gravidade
+      jogador.velY += CONFIG.gravidade;
+      jogador.noChao = false;
+      jogador.y += jogador.velY;
 
-                // Faixa branca policial
-                ctx.fillStyle = "#ffffff";
-                ctx.fillRect(drawX + 14, drawY + 10, 32, 6);
+      for (const plat of plataformas) {
+        if (verificarColisao(jogador, plat)) {
+          if (jogador.velY > 0) {
+            jogador.y = plat.y - jogador.altura;
+            jogador.velY = 0;
+            jogador.noChao = true;
+          } else if (jogador.velY < 0) {
+            jogador.y = plat.y + plat.altura;
+            jogador.velY = 0;
+          }
+        }
+      }
 
-                // Vidro frontal da cabine
-                ctx.fillStyle = "#38bdf8";
-                ctx.beginPath();
-                ctx.roundRect(drawX + 36, drawY + 3, 16, 9, [2, 8, 2, 2]);
-                ctx.fill();
+      // 3. Atualização da Câmera Side-Scrolling
+      const alvoCamera = jogador.x - canvas.width * 0.32;
+      cameraX = Math.max(0, Math.min(alvoCamera, CONFIG.larguraFase - canvas.width));
 
-                // Esquis de pouso (pernas)
-                ctx.strokeStyle = "#9ca3af";
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(drawX + 18, drawY + this.height);
-                ctx.lineTo(drawX + 15, drawY + this.height + 5);
-                ctx.moveTo(drawX + 42, drawY + this.height);
-                ctx.lineTo(drawX + 45, drawY + this.height + 5);
-                ctx.moveTo(drawX + 10, drawY + this.height + 5);
-                ctx.lineTo(drawX + 52, drawY + this.height + 5);
-                ctx.stroke();
+      // 4. Coleta das Barras de Ouro
+      for (const barra of barrasOuro) {
+        if (barra.coletada) continue;
 
-                // 4. SIRENE POLICIAL PISCANDO (Vermelho e Azul)
-                const isRed = Math.floor(Date.now() / 140) % 2 === 0;
-                ctx.fillStyle = isRed ? "#ff0033" : "#0066ff";
-                ctx.beginPath();
-                ctx.arc(drawX + 30, drawY + this.height + 2, 3.5, 0, Math.PI * 2);
-                ctx.fill();
+        if (verificarColisao(jogador, barra)) {
+          barra.coletada = true;
+          pontos += CONFIG.pontosPorBarra;
+          atualizarHUD();
+          criarParticulas(barra.x + barra.largura / 2, barra.y + barra.altura / 2, "#facc15", 10);
+        }
+      }
 
-                // 5. HÉLICE PRINCIPAL NO TOPO GIRANDO
-                ctx.fillStyle = "#4b5563";
-                ctx.fillRect(drawX + 29, drawY - 5, 4, 5); // Eixo
+      // 5. Patrulha e Colisão com Carros Monstros Vermelhos
+      for (const inimigo of inimigos) {
+        if (!inimigo.vivo) continue;
 
-                const rotorRadius = Math.sin(Date.now() / 25) * 48;
-                ctx.strokeStyle = "#e5e7eb";
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(drawX + 31 - rotorRadius, drawY - 5);
-                ctx.lineTo(drawX + 31 + rotorRadius, drawY - 5);
-                ctx.stroke();
-            }
-        };
+        inimigo.x += inimigo.velX;
+        inimigo.anguloRoda += inimigo.velX * 0.12;
 
-        let platforms = [];
-        let coins = [];
-        let obstacles = [];
-        let finishLine = { x: 3050, y: 0, width: 40, height: 420 };
-
-        function initLevel() {
-            platforms = [
-                { x: 0, y: 360, width: 900, height: 60 },
-                { x: 1000, y: 360, width: 800, height: 60 },
-                { x: 1900, y: 360, width: 1300, height: 60 },
-
-                { x: 300, y: 270, width: 180, height: 18 },
-                { x: 550, y: 200, width: 200, height: 18 },
-                { x: 1100, y: 270, width: 160, height: 18 },
-                { x: 1350, y: 200, width: 180, height: 18 },
-                { x: 1600, y: 140, width: 180, height: 18 },
-                { x: 2000, y: 270, width: 220, height: 18 },
-                { x: 2350, y: 200, width: 200, height: 18 },
-                { x: 2650, y: 270, width: 250, height: 18 }
-            ];
-
-            coins = [
-                { x: 350, y: 230, collected: false },
-                { x: 400, y: 230, collected: false },
-                { x: 600, y: 160, collected: false },
-                { x: 650, y: 160, collected: false },
-                { x: 950, y: 320, collected: false },
-                { x: 1150, y: 230, collected: false },
-                { x: 1400, y: 160, collected: false },
-                { x: 1680, y: 100, collected: false },
-                { x: 2050, y: 230, collected: false },
-                { x: 2120, y: 230, collected: false },
-                { x: 2400, y: 160, collected: false },
-                { x: 2750, y: 230, collected: false }
-            ];
-
-            obstacles = [
-                { x: 450, y: 340, width: 45, height: 20, vx: 2, minX: 400, maxX: 750, type: 'car' },
-                { x: 1200, y: 340, width: 45, height: 20, vx: 2.5, minX: 1050, maxX: 1600, type: 'car' },
-                { x: 2100, y: 340, width: 45, height: 20, vx: 3, minX: 1950, maxX: 2500, type: 'car' },
-
-                { x: 600, y: 192, width: 30, height: 8, type: 'oil' },
-                { x: 1420, y: 192, width: 30, height: 8, type: 'oil' },
-                { x: 2420, y: 192, width: 30, height: 8, type: 'oil' }
-            ];
+        if (inimigo.x <= inimigo.minX || inimigo.x + inimigo.largura >= inimigo.maxX) {
+          inimigo.velX *= -1;
         }
 
-        // ==========================================
-        // LÓGICA PRINCIPAL (UPDATE)
-        // ==========================================
+        if (verificarColisao(jogador, inimigo)) {
+          const baseAnterior = jogador.y + jogador.altura - jogador.velY;
+          // Esmaga o carro inimigo se cair por cima do teto dele
+          if (jogador.velY > 0 && baseAnterior <= inimigo.y + inimigo.altura * 0.55) {
+            inimigo.vivo = false;
+            jogador.velY = -11; // Quica para cima
+            pontos += CONFIG.pontosPorInimigo;
+            atualizarHUD();
+            criarParticulas(inimigo.x + inimigo.largura / 2, inimigo.y + 15, "#f97316", 16);
+            mostrarAviso(`+${CONFIG.pontosPorInimigo} pts! Carro inimigo esmagado!`);
+          } else {
+            sofrerDano();
+          }
+        }
+      }
 
-        function update() {
-            if (gameOver) return;
+      // 6. Colisão com Espinhos
+      for (const esp of espinhos) {
+        if (verificarColisao(jogador, esp)) {
+          sofrerDano();
+        }
+      }
 
-            player.update();
-            policeHelicopter.update(player); // Atualiza a perseguição do helicóptero
+      // 7. Atualização das Partículas
+      for (let i = particulas.length - 1; i >= 0; i--) {
+        const p = particulas[i];
+        p.x += p.velX;
+        p.y += p.velY;
+        p.velY += 0.25;
+        p.vida--;
+        if (p.vida <= 0) particulas.splice(i, 1);
+      }
 
-            player.grounded = false;
-            platforms.forEach(plat => {
-                if (
-                    player.x < plat.x + plat.width &&
-                    player.x + player.width > plat.x &&
-                    player.y + player.height >= plat.y &&
-                    player.y + player.height <= plat.y + plat.height + 10 &&
-                    player.vy >= 0
-                ) {
-                    player.grounded = true;
-                    player.vy = 0;
-                    player.y = plat.y - player.height;
-                }
-            });
+      // 8. Lógica e Batalha contra o Carro Monstro Vilão Gigante
+      if (chefao.invencivel > 0) chefao.invencivel--;
+      if (chefao.treme > 0) chefao.treme--;
 
-            if (player.y > canvas.height + 50) {
-                takeDamage(true);
-            }
+      // Aviso quando o jogador se aproxima do Vilão Gigante
+      if (!chefao.derrotado && !chefao.avisoMostrado && jogador.x > 2430) {
+        chefao.avisoMostrado = true;
+        mostrarAviso("⚠️ VILÃO GIGANTE! Pule 3x no teto dele para vencer!");
+      }
 
-            coins.forEach(coin => {
-                if (!coin.collected) {
-                    let cx = player.x + player.width / 2;
-                    let cy = player.y + player.height / 2;
-                    let dist = Math.hypot(cx - coin.x, cy - coin.y);
-
-                    if (dist < player.width / 2 + 10) {
-                        coin.collected = true;
-                        score += 50;
-                        scoreText.textContent = score;
-                    }
-                }
-            });
-
-            obstacles.forEach(obs => {
-                if (obs.type === 'car') {
-                    obs.x += obs.vx;
-                    if (obs.x <= obs.minX || obs.x + obs.width >= obs.maxX) {
-                        obs.vx *= -1;
-                    }
-                }
-
-                if (
-                    !player.invulnerable &&
-                    player.x < obs.x + obs.width &&
-                    player.x + player.width > obs.x &&
-                    player.y < obs.y + obs.height &&
-                    player.y + player.height > obs.y
-                ) {
-                    takeDamage(false);
-                }
-            });
-
-            if (player.x + player.width >= finishLine.x) {
-                endGame(true);
-            }
-
-            cameraX = player.x - 150;
-            if (cameraX < 0) cameraX = 0;
-            if (cameraX > LEVEL_WIDTH - canvas.width) cameraX = LEVEL_WIDTH - canvas.width;
+      if (!chefao.derrotado) {
+        // Movimento curto ameaçador perto da linha de chegada
+        chefao.x += chefao.velX;
+        chefao.anguloRoda += chefao.velX * 0.05;
+        if (chefao.x <= chefao.minX || chefao.x >= chefao.maxX) {
+          chefao.velX *= -1;
         }
 
-        function takeDamage(instantFall) {
-            lives--;
-            updateLivesUI();
+        // Fumaça e faíscas constantes nos escapamentos gigantes
+        if (Math.random() < 0.45) {
+          particulas.push({
+            x: chefao.x + chefao.largura - 18,
+            y: chefao.y + 28,
+            velX: 1 + Math.random() * 2,
+            velY: -(1.5 + Math.random() * 2.5),
+            tamanho: 5 + Math.random() * 5,
+            cor: Math.random() > 0.4 ? "#f97316" : "#475569",
+            vida: 24
+          });
+        }
 
-            if (lives <= 0) {
-                endGame(false);
-            } else {
-                player.invulnerable = true;
-                player.invulnerableTimer = 90;
-                player.x = Math.max(60, player.x - 150);
-                player.y = 200;
-                player.vy = 0;
+        // Colisão entre o Jogador e o Vilão Gigante
+        if (verificarColisao(jogador, chefao)) {
+          const baseAnterior = jogador.y + jogador.altura - jogador.velY;
+          // Verifica se o jogador caiu no teto do Vilão Gigante
+          if (jogador.velY > 0 && baseAnterior <= chefao.y + 44) {
+            jogador.y = chefao.y - jogador.altura;
+            jogador.velY = -14.5; // Impulso alto para o jogador preparar o próximo salto
+            jogador.velX = -4.5;
+
+            if (chefao.invencivel === 0) {
+              chefao.vidas--;
+              chefao.invencivel = 45;
+              chefao.treme = 26;
+              criarParticulas(chefao.x + chefao.largura / 2, chefao.y + 20, "#f97316", 24);
+
+              if (chefao.vidas <= 0) {
+                chefao.derrotado = true;
+                pontos += CONFIG.pontosPorChefao;
+                atualizarHUD();
+                criarParticulas(chefao.x + chefao.largura / 2, chefao.y + 60, "#facc15", 35);
+                mostrarAviso(`💥 VILÃO DERROTADO (+${CONFIG.pontosPorChefao} pts)! Cruze a chegada!`);
+              } else {
+                mostrarAviso(`🔥 ACERTOU O TETO! Faltam ${chefao.vidas} pulo(s) para derrotá-lo!`);
+              }
             }
+          } else {
+            // Bateu na frente/lateral do Vilão Gigante: leva dano e é empurrado para trás
+            jogador.x = chefao.x - jogador.largura - 6;
+            jogador.velX = -8;
+            sofrerDano();
+          }
+        }
+      } else {
+        // Quando derrotado, solta fumaça contínua enquanto o jogador cruza a linha de chegada
+        if (Math.random() < 0.6) {
+          particulas.push({
+            x: chefao.x + 40 + Math.random() * 120,
+            y: chefao.y + 30,
+            velX: (Math.random() - 0.5) * 2,
+            velY: -(1.5 + Math.random() * 2.5),
+            tamanho: 7 + Math.random() * 6,
+            cor: "#64748b",
+            vida: 35
+          });
+        }
+      }
+
+      // 9. Verificação da Linha de Chegada Quadriculada
+      if (jogador.x + jogador.largura >= CONFIG.posicaoChegada) {
+        if (chefao.derrotado) {
+          finalizarJogo(true);
+        } else {
+          jogador.x = CONFIG.posicaoChegada - jogador.largura;
+          mostrarAviso("⚠️ Derrote o Vilão Gigante antes de cruzar a chegada!");
+        }
+      }
+    }
+
+    // ========================================================================
+    // 7. FUNÇÕES DE DESENHO NO CANVAS 2D
+    // ========================================================================
+
+    // Desenha tanto o Carro Monstro Azul (jogador) quanto os Vermelhos (inimigos)
+    function desenharCarroMonstro(x, y, largura, altura, direcao, anguloRoda, ehInimigo) {
+      ctx.save();
+      // Espelha horizontalmente o desenho conforme a direção do movimento
+      ctx.translate(x + largura / 2, y);
+      ctx.scale(direcao, 1);
+      const ox = -largura / 2;
+
+      const corPrincipal = ehInimigo ? CONFIG.corCarroInimigo : CONFIG.corCarroJogador;
+      const corEscura = ehInimigo ? "#991b1b" : "#1d4ed8";
+      const corFaixa = ehInimigo ? "#1e293b" : CONFIG.corFaixaJogador;
+
+      // 1. Suspensão e amortecedores
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(ox + 16, 24);
+      ctx.lineTo(ox + 16, altura - 13);
+      ctx.moveTo(ox + largura - 16, 24);
+      ctx.lineTo(ox + largura - 16, altura - 13);
+      ctx.stroke();
+
+      // 2. Cano de escapamento traseiro
+      ctx.fillStyle = "#475569";
+      ctx.fillRect(ox + 4, 14, 5, 11);
+
+      // 3. Carroceria estilo Picape Monster Truck
+      ctx.fillStyle = corPrincipal;
+      ctx.beginPath();
+      ctx.moveTo(ox + 3, 25);               // Traseira inferior
+      ctx.lineTo(ox + 3, 14);               // Caçamba traseira
+      ctx.lineTo(ox + 22, 14);              // Início da cabine
+      ctx.lineTo(ox + 28, 3);               // Teto traseiro da cabine
+      ctx.lineTo(ox + 48, 3);               // Teto dianteiro da cabine
+      ctx.lineTo(ox + 56, 14);              // Base do para-brisa
+      ctx.lineTo(ox + largura - 3, 16);     // Capô frontal
+      ctx.lineTo(ox + largura - 3, 26);     // Frente inferior
+      ctx.closePath();
+      ctx.fill();
+
+      // Contorno da carroceria
+      ctx.strokeStyle = corEscura;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 4. Faixa lateral esportiva
+      ctx.fillStyle = corFaixa;
+      ctx.fillRect(ox + 5, 19, largura - 10, 4);
+
+      // 5. Para-brisa / Janela da cabine
+      ctx.fillStyle = ehInimigo ? "#0f172a" : "#bae6fd";
+      ctx.beginPath();
+      ctx.moveTo(ox + 30, 6);
+      ctx.lineTo(ox + 46, 6);
+      ctx.lineTo(ox + 53, 14);
+      ctx.lineTo(ox + 30, 14);
+      ctx.closePath();
+      ctx.fill();
+
+      // Detalhe "bravo" no vidro se for inimigo vermelho
+      if (ehInimigo) {
+        ctx.strokeStyle = "#facc15";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(ox + 36, 8);
+        ctx.lineTo(ox + 50, 12);
+        ctx.stroke();
+
+        // Para-choque dianteiro reforçado de aço
+        ctx.fillStyle = "#334155";
+        ctx.fillRect(ox + largura - 5, 17, 7, 10);
+      } else {
+        // Farol dianteiro amarelo brilhante do jogador
+        ctx.fillStyle = "#fef08a";
+        ctx.fillRect(ox + largura - 5, 17, 4, 5);
+      }
+
+      // 6. Duas Rodas Gigantes com Calotas Giratórias
+      const raioRoda = 13;
+      const posicoesRodas = [ox + 16, ox + largura - 16];
+      const centroY = altura - raioRoda;
+
+      for (const centroX of posicoesRodas) {
+        // Pneu preto gigante
+        ctx.fillStyle = "#0f172a";
+        ctx.beginPath();
+        ctx.arc(centroX, centroY, raioRoda, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cravos/garras do pneu girando
+        ctx.strokeStyle = "#334155";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 6; i++) {
+          const ang = anguloRoda + (i * Math.PI) / 3;
+          ctx.beginPath();
+          ctx.moveTo(centroX + Math.cos(ang) * (raioRoda - 3), centroY + Math.sin(ang) * (raioRoda - 3));
+          ctx.lineTo(centroX + Math.cos(ang) * (raioRoda + 1), centroY + Math.sin(ang) * (raioRoda + 1));
+          ctx.stroke();
         }
 
-        function updateLivesUI() {
-            let hearts = "";
-            for (let i = 0; i < lives; i++) hearts += "❤️";
-            livesText.textContent = hearts || "💥";
+        // Calota prateada
+        ctx.fillStyle = "#cbd5e1";
+        ctx.beginPath();
+        ctx.arc(centroX, centroY, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Raios da calota girando
+        ctx.strokeStyle = "#475569";
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 3; i++) {
+          const ang = anguloRoda + (i * Math.PI) / 3;
+          ctx.beginPath();
+          ctx.moveTo(centroX - Math.cos(ang) * 5, centroY - Math.sin(ang) * 5);
+          ctx.lineTo(centroX + Math.cos(ang) * 5, centroY + Math.sin(ang) * 5);
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    // Desenha o Carro Monstro Vilão Gigante olhando diretamente para o jogador
+    function desenharChefaoGigante() {
+      const tremorX = chefao.treme > 0 ? (Math.random() - 0.5) * 8 : 0;
+      const tremorY = chefao.treme > 0 ? (Math.random() - 0.5) * 6 : 0;
+      const x = chefao.x + tremorX;
+      const y = chefao.y + tremorY;
+      const w = chefao.largura;
+      const h = chefao.altura;
+
+      // Pisca quando recebe dano
+      if (chefao.invencivel > 0 && Math.floor(chefao.invencivel / 5) % 2 === 1) {
+        return;
+      }
+
+      ctx.save();
+      // O vilão fica virado para a esquerda (encarando o jogador que vem da esquerda)
+      ctx.translate(x + w / 2, y);
+      ctx.scale(-1, 1);
+      const ox = -w / 2;
+
+      const corPrincipal = chefao.derrotado ? "#27272a" : "#09090b";
+      const corCarmesim = chefao.derrotado ? "#52525b" : "#991b1b";
+      const corDestaque = chefao.derrotado ? "#71717a" : "#dc2626";
+
+      // 1. Suspensão hidráulica gigante com molas vermelhas
+      ctx.strokeStyle = "#71717a";
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(ox + 48, 68);
+      ctx.lineTo(ox + 48, h - 38);
+      ctx.moveTo(ox + w - 48, 68);
+      ctx.lineTo(ox + w - 48, h - 38);
+      ctx.stroke();
+
+      ctx.strokeStyle = corDestaque;
+      ctx.lineWidth = 4;
+      for (let s = 74; s < h - 42; s += 8) {
+        ctx.beginPath();
+        ctx.moveTo(ox + 41, s);
+        ctx.lineTo(ox + 55, s + 4);
+        ctx.moveTo(ox + w - 55, s);
+        ctx.lineTo(ox + w - 41, s + 4);
+        ctx.stroke();
+      }
+
+      // 2. Escapamentos duplos gigantes na traseira
+      ctx.fillStyle = "#3f3f46";
+      ctx.fillRect(ox + 12, 34, 14, 34);
+      ctx.fillRect(ox + 28, 38, 12, 30);
+
+      // 3. Carroceria colossal preta e carmesim
+      ctx.fillStyle = corPrincipal;
+      ctx.beginPath();
+      ctx.moveTo(ox + 8, 76);
+      ctx.lineTo(ox + 8, 42);
+      ctx.lineTo(ox + 64, 42);
+      ctx.lineTo(ox + 84, 8);
+      ctx.lineTo(ox + 146, 8);
+      ctx.lineTo(ox + 170, 42);
+      ctx.lineTo(ox + w - 8, 48);
+      ctx.lineTo(ox + w - 8, 78);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = corDestaque;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // 4. Pintura tribal/carmesim lateral e chamas
+      ctx.fillStyle = corCarmesim;
+      ctx.beginPath();
+      ctx.moveTo(ox + 12, 56);
+      ctx.lineTo(ox + w - 12, 56);
+      ctx.lineTo(ox + w - 12, 72);
+      ctx.lineTo(ox + 12, 72);
+      ctx.closePath();
+      ctx.fill();
+
+      // Destaque no teto (zona de impacto onde o jogador deve pular 3x)
+      if (!chefao.derrotado) {
+        ctx.fillStyle = "#facc15";
+        ctx.fillRect(ox + 88, 4, 54, 5);
+      }
+
+      // 5. Para-brisa gigante com OLHOS VERMELHOS QUE SEGUEM O JOGADOR
+      ctx.fillStyle = "#18181b";
+      ctx.beginPath();
+      ctx.moveTo(ox + 90, 16);
+      ctx.lineTo(ox + 140, 16);
+      ctx.lineTo(ox + 162, 42);
+      ctx.lineTo(ox + 90, 42);
+      ctx.closePath();
+      ctx.fill();
+
+      // Calcula o ângulo real do Vilão Gigante olhando para o centro do Jogador!
+      // Como o contexto está espelhado horizontalmente (scale(-1, 1)), invertemos o dx
+      const centroAlvoX = jogador.x + jogador.largura / 2;
+      const centroAlvoY = jogador.y + jogador.altura / 2;
+      const olhoMundoX = x + 65;
+      const olhoMundoY = y + 29;
+      const dx = -(centroAlvoX - olhoMundoX);
+      const dy = centroAlvoY - olhoMundoY;
+      const anguloOlhar = Math.atan2(dy, dx);
+
+      // Desenha os 2 olhos malignos no para-brisa acompanhando o jogador
+      const posOlhos = [ox + 112, ox + 138];
+      for (const ex of posOlhos) {
+        const ey = 29;
+        // Esclera vermelha brilhante
+        ctx.fillStyle = chefao.derrotado ? "#52525b" : "#ef4444";
+        ctx.beginPath();
+        ctx.ellipse(ex, ey, 10, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (!chefao.derrotado) {
+          // Pupila amarela/branca que se move na direção exata do jogador
+          const pupilaX = ex + Math.cos(anguloOlhar) * 4.5;
+          const pupilaY = ey + Math.sin(anguloOlhar) * 3;
+          ctx.fillStyle = "#fef08a";
+          ctx.beginPath();
+          ctx.arc(pupilaX, pupilaY, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Sobrancelha metálica raivosa
+      ctx.strokeStyle = "#dc2626";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(ox + 100, 19);
+      ctx.lineTo(ox + 125, 25);
+      ctx.lineTo(ox + 150, 19);
+      ctx.stroke();
+
+      // 6. Para-choque dianteiro com DENTES METÁLICOS AFIADOS e Farol rastreador
+      ctx.fillStyle = "#334155";
+      ctx.fillRect(ox + w - 12, 48, 16, 28);
+
+      // Dentes metálicos triangulares
+      ctx.fillStyle = "#e2e8f0";
+      for (let d = 0; d < 3; d++) {
+        const dyDente = 50 + d * 8;
+        ctx.beginPath();
+        ctx.moveTo(ox + w + 4, dyDente);
+        ctx.lineTo(ox + w + 14, dyDente + 4);
+        ctx.lineTo(ox + w + 4, dyDente + 8);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Farol vermelho gigante que também olha para o jogador
+      const fx = ox + w - 8;
+      const fy = 53;
+      ctx.fillStyle = chefao.derrotado ? "#3f3f46" : "#dc2626";
+      ctx.beginPath();
+      ctx.arc(fx, fy, 7, 0, Math.PI * 2);
+      ctx.fill();
+      if (!chefao.derrotado) {
+        ctx.fillStyle = "#fef08a";
+        ctx.beginPath();
+        ctx.arc(fx + Math.cos(anguloOlhar) * 3, fy + Math.sin(anguloOlhar) * 3, 2.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 7. Rodas Colossais (raio 39px - 3x maiores que as do jogador)
+      const raioRoda = 39;
+      const posRodas = [ox + 48, ox + w - 48];
+      const centroY = h - raioRoda;
+
+      for (const cx of posRodas) {
+        // Pneu colossal
+        ctx.fillStyle = "#09090b";
+        ctx.beginPath();
+        ctx.arc(cx, centroY, raioRoda, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cravos gigantes do pneu
+        ctx.fillStyle = "#27272a";
+        for (let i = 0; i < 10; i++) {
+          const ang = -chefao.anguloRoda + (i * Math.PI) / 5;
+          ctx.beginPath();
+          ctx.arc(
+            cx + Math.cos(ang) * (raioRoda - 1),
+            centroY + Math.sin(ang) * (raioRoda - 1),
+            4.5,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
         }
 
-        function endGame(isWin) {
-            gameOver = true;
-            overlay.classList.remove("hidden");
+        // Aro carmesim gigante
+        ctx.fillStyle = corDestaque;
+        ctx.beginPath();
+        ctx.arc(cx, centroY, 19, 0, Math.PI * 2);
+        ctx.fill();
 
-            if (isWin) {
-                overlayTitle.textContent = "PROTÓTIPO HOMOLOGADO!";
-                overlayTitle.className = "win-title";
-                overlayDesc.textContent = `Você escapou do helicóptero! Energia calibrada: ${score} pontos.`;
-            } else {
-                overlayTitle.textContent = "TESTE INTERROMPIDO!";
-                overlayTitle.className = "lose-title";
-                overlayDesc.textContent = "O Protótipo V-1 sofreu danos na pista suspensa.";
-            }
+        // Miolo escuro com parafusos
+        ctx.fillStyle = "#18181b";
+        ctx.beginPath();
+        ctx.arc(cx, centroY, 9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    // Desenha uma Barra de Ouro 3D trapezoidal com brilho
+    function desenharBarraOuro(barra) {
+      const flutuacao = Math.sin(Date.now() / 220 + barra.x * 0.05) * 3;
+      const x = barra.x;
+      const y = barra.y + flutuacao;
+      const w = barra.largura;
+      const h = barra.altura;
+
+      // Face frontal trapezoidal dourada (#eab308)
+      ctx.fillStyle = "#eab308";
+      ctx.beginPath();
+      ctx.moveTo(x + 5, y);
+      ctx.lineTo(x + w - 5, y);
+      ctx.lineTo(x + w, y + h);
+      ctx.lineTo(x, y + h);
+      ctx.closePath();
+      ctx.fill();
+
+      // Brilho superior (#fef08a)
+      ctx.fillStyle = "#fef08a";
+      ctx.beginPath();
+      ctx.moveTo(x + 6, y + 1);
+      ctx.lineTo(x + w - 6, y + 1);
+      ctx.lineTo(x + w - 9, y + 6);
+      ctx.lineTo(x + 9, y + 6);
+      ctx.closePath();
+      ctx.fill();
+
+      // Sombra lateral direita (#a16207)
+      ctx.fillStyle = "#a16207";
+      ctx.beginPath();
+      ctx.moveTo(x + w - 5, y);
+      ctx.lineTo(x + w, y + h);
+      ctx.lineTo(x + w - 7, y + h);
+      ctx.lineTo(x + w - 9, y + 6);
+      ctx.closePath();
+      ctx.fill();
+
+      // Contorno nítido
+      ctx.strokeStyle = "#713f12";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x + 5, y);
+      ctx.lineTo(x + w - 5, y);
+      ctx.lineTo(x + w, y + h);
+      ctx.lineTo(x, y + h);
+      ctx.closePath();
+      ctx.stroke();
+
+      // Pequeno brilho estrelado piscando
+      const pulso = (Math.sin(Date.now() / 180 + barra.x) + 1) / 2;
+      if (pulso > 0.45) {
+        const bx = x + 9;
+        const by = y + 3;
+        const tam = 4 * pulso;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(bx - tam, by);
+        ctx.lineTo(bx + tam, by);
+        ctx.moveTo(bx, by - tam);
+        ctx.lineTo(bx, by + tam);
+        ctx.stroke();
+      }
+    }
+
+    // Desenha a Linha de Chegada Quadriculada no final da corrida
+    function desenharLinhaChegada() {
+      const x = CONFIG.posicaoChegada;
+      const topo = 215;
+      const base = 405;
+
+      // Mastro metálico
+      ctx.fillStyle = "#e2e8f0";
+      ctx.fillRect(x, topo, 8, base - topo);
+
+      // Bandeira quadriculada grande no topo
+      const largBandeira = 72;
+      const altBandeira = 48;
+      const cols = 6;
+      const rows = 4;
+      const tamQ = largBandeira / cols;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          ctx.fillStyle = (r + c) % 2 === 0 ? "#ffffff" : "#0f172a";
+          ctx.fillRect(x + 8 + c * tamQ, topo + r * tamQ, tamQ, tamQ);
+        }
+      }
+
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 8, topo, largBandeira, altBandeira);
+
+      // Placa "CHEGADA"
+      ctx.fillStyle = "#facc15";
+      ctx.fillRect(x - 16, topo - 28, 86, 22);
+      ctx.strokeStyle = "#0f172a";
+      ctx.strokeRect(x - 16, topo - 28, 86, 22);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("CHEGADA", x + 27, topo - 13);
+      ctx.textAlign = "left";
+    }
+
+    // Desenha a barra de progresso da corrida no topo do Canvas
+    function desenharBarraProgresso() {
+      const barX = 190;
+      const barY = 14;
+      const barW = 420;
+      const barH = 14;
+
+      const progresso = Math.max(0, Math.min(1, (jogador.x - 60) / (CONFIG.posicaoChegada - 60)));
+
+      // Fundo da barra
+      ctx.fillStyle = "rgba(15, 23, 42, 0.78)";
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barW, barH, 7);
+      ctx.fill();
+
+      // Preenchimento laranja/dourado do trajeto concluído
+      ctx.fillStyle = "#f97316";
+      ctx.beginPath();
+      ctx.roundRect(barX + 2, barY + 2, Math.max(8, (barW - 4) * progresso), barH - 4, 5);
+      ctx.fill();
+
+      // Marcador azul da posição atual do jogador
+      const marcadorX = barX + 6 + (barW - 18) * progresso;
+      ctx.fillStyle = "#38bdf8";
+      ctx.beginPath();
+      ctx.arc(marcadorX, barY + barH / 2, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Ícone do Vilão/Chegada no final da barra
+      ctx.fillStyle = "#facc15";
+      ctx.font = "bold 12px sans-serif";
+      ctx.fillText("👹🏁", barX + barW + 6, barY + 12);
+
+      // Barra de Vida do Vilão Gigante quando o jogador se aproxima dele
+      if (jogador.x > 2400 && !chefao.derrotado) {
+        const bossBarW = 280;
+        const bossBarH = 22;
+        const bossBarX = (canvas.width - bossBarW) / 2;
+        const bossBarY = 38;
+
+        ctx.fillStyle = "rgba(9, 9, 11, 0.88)";
+        ctx.beginPath();
+        ctx.roundRect(bossBarX - 8, bossBarY - 6, bossBarW + 16, bossBarH + 26, 8);
+        ctx.fill();
+        ctx.strokeStyle = "#dc2626";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = "#fca5a5";
+        ctx.font = "bold 12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`👹 VILÃO GIGANTE (${chefao.vidas}/${chefao.maxVidas} VIDAS)`, canvas.width / 2, bossBarY + 8);
+        ctx.textAlign = "left";
+
+        // 3 blocos de vida do Vilão Gigante
+        const segW = (bossBarW - 12) / chefao.maxVidas;
+        for (let i = 0; i < chefao.maxVidas; i++) {
+          ctx.fillStyle = i < chefao.vidas ? "#dc2626" : "#27272a";
+          ctx.fillRect(bossBarX + i * (segW + 6), bossBarY + 14, segW, 10);
+        }
+      }
+    }
+
+    // Desenha o Grande Vulcão Principal em erupção com rios de lava e jatos parabólicos
+    function desenharVulcaoPrincipal() {
+      // Usa parallax suave (0.12x) para permanecer majestoso ao longo de toda a fase
+      const vx = 520 - cameraX * 0.12;
+      const baseY = 405;
+      const topoY = 128;
+      const larguraBase = 480;
+      const larguraCratera = 96;
+
+      // Brilho atmosférico laranja atrás da cratera
+      const brilhoCratera = ctx.createRadialGradient(vx, topoY, 10, vx, topoY, 175);
+      brilhoCratera.addColorStop(0, "rgba(250, 204, 21, 0.55)");
+      brilhoCratera.addColorStop(0.5, "rgba(234, 88, 12, 0.25)");
+      brilhoCratera.addColorStop(1, "rgba(234, 88, 12, 0)");
+      ctx.fillStyle = brilhoCratera;
+      ctx.beginPath();
+      ctx.arc(vx, topoY, 175, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bolas de lava incandescentes lançadas para fora da cratera
+      for (const bola of bolasLava) {
+        const bx = vx + bola.offsetX;
+        const by = topoY + 4 + bola.offsetY;
+
+        // Rastro luminoso
+        for (let r = 0; r < bola.rastro.length; r++) {
+          const pt = bola.rastro[r];
+          const alfa = (r + 1) / bola.rastro.length;
+          ctx.fillStyle = `rgba(249, 115, 22, ${alfa * 0.55})`;
+          ctx.beginPath();
+          ctx.arc(vx + pt.x, topoY + 4 + pt.y, bola.raio * alfa * 0.85, 0, Math.PI * 2);
+          ctx.fill();
         }
 
-        function restartGame() {
-            score = 0;
-            lives = 3;
-            gameOver = false;
-            scoreText.textContent = score;
-            updateLivesUI();
-            player.reset();
-            policeHelicopter.reset();
-            initLevel();
-            overlay.classList.add("hidden");
-            
-            cancelAnimationFrame(animationId);
-            gameLoop();
+        // Esfera de lava com núcleo amarelo
+        ctx.fillStyle = "#ea580c";
+        ctx.beginPath();
+        ctx.arc(bx, by, bola.raio, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#fef08a";
+        ctx.beginPath();
+        ctx.arc(bx, by, bola.raio * 0.52, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Cone principal do vulcão em rocha escura
+      ctx.fillStyle = "#1c1917";
+      ctx.beginPath();
+      ctx.moveTo(vx - larguraBase / 2, baseY);
+      ctx.lineTo(vx - larguraCratera / 2, topoY);
+      ctx.lineTo(vx + larguraCratera / 2, topoY);
+      ctx.lineTo(vx + larguraBase / 2, baseY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Sombra lateral direita do cone
+      ctx.fillStyle = "#0c0a09";
+      ctx.beginPath();
+      ctx.moveTo(vx + 10, topoY);
+      ctx.lineTo(vx + larguraCratera / 2, topoY);
+      ctx.lineTo(vx + larguraBase / 2, baseY);
+      ctx.lineTo(vx + 70, baseY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Boca incandescente da cratera
+      ctx.fillStyle = "#f97316";
+      ctx.beginPath();
+      ctx.ellipse(vx, topoY, larguraCratera / 2, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#facc15";
+      ctx.beginPath();
+      ctx.ellipse(vx, topoY, larguraCratera * 0.34, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Rios de lava brilhante escorrendo pela encosta do vulcão
+      const pulsoLava = Math.sin(Date.now() / 250) * 3;
+      ctx.strokeStyle = "#ea580c";
+      ctx.lineWidth = 10;
+      ctx.lineCap = "round";
+
+      // Rio de lava esquerdo
+      ctx.beginPath();
+      ctx.moveTo(vx - 24, topoY + 4);
+      ctx.quadraticCurveTo(vx - 65 + pulsoLava, 230, vx - 125, 340);
+      ctx.quadraticCurveTo(vx - 150 - pulsoLava, 375, vx - 175, baseY);
+      ctx.stroke();
+
+      // Rio de lava central
+      ctx.beginPath();
+      ctx.moveTo(vx + 6, topoY + 5);
+      ctx.quadraticCurveTo(vx - 14 - pulsoLava, 245, vx + 18, 335);
+      ctx.quadraticCurveTo(vx + 32 + pulsoLava, 375, vx + 22, baseY);
+      ctx.stroke();
+
+      // Rio de lava direito
+      ctx.beginPath();
+      ctx.moveTo(vx + 30, topoY + 4);
+      ctx.quadraticCurveTo(vx + 75 + pulsoLava, 225, vx + 130, 330);
+      ctx.stroke();
+
+      // Núcleo amarelo incandescente dentro dos rios de lava
+      ctx.strokeStyle = "#facc15";
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(vx - 24, topoY + 4);
+      ctx.quadraticCurveTo(vx - 65 + pulsoLava, 230, vx - 125, 340);
+      ctx.moveTo(vx + 6, topoY + 5);
+      ctx.quadraticCurveTo(vx - 14 - pulsoLava, 245, vx + 18, 335);
+      ctx.stroke();
+    }
+
+    function desenhar() {
+      // 1. Céu vulcânico dramático em degradê (cinzas, vermelho-escuro e laranja)
+      const gradienteCeu = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradienteCeu.addColorStop(0, CONFIG.corCeuTopo);
+      gradienteCeu.addColorStop(0.58, CONFIG.corCeuMeio);
+      gradienteCeu.addColorStop(1, CONFIG.corCeuBase);
+      ctx.fillStyle = gradienteCeu;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 2. Cadeia de montanhas vulcânicas secundárias com parallax
+      for (const m of montanhas) {
+        const mx = m.x - cameraX * 0.18;
+        if (mx + m.largura < -50 || mx > canvas.width + 50) continue;
+
+        ctx.fillStyle = "#292524";
+        ctx.beginPath();
+        ctx.moveTo(mx, 405);
+        ctx.lineTo(mx + m.largura / 2, 405 - m.altura);
+        ctx.lineTo(mx + m.largura, 405);
+        ctx.closePath();
+        ctx.fill();
+
+        // Reflexo avermelhado da lava no cume
+        ctx.strokeStyle = "rgba(234, 88, 12, 0.45)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(mx + m.largura * 0.35, 405 - m.altura * 0.7);
+        ctx.lineTo(mx + m.largura / 2, 405 - m.altura);
+        ctx.lineTo(mx + m.largura * 0.65, 405 - m.altura * 0.7);
+        ctx.stroke();
+      }
+
+      // 3. Grande Vulcão Principal jogando lava para fora
+      desenharVulcaoPrincipal();
+
+      // 4. Nuvens de fumaça vulcânica com parallax
+      ctx.fillStyle = "rgba(41, 37, 36, 0.65)";
+      for (const nuvem of nuvens) {
+        const nx = nuvem.x - cameraX * 0.32;
+        if (nx < -100 || nx > canvas.width + 100) continue;
+
+        ctx.beginPath();
+        ctx.arc(nx, nuvem.y, 22 * nuvem.escala, 0, Math.PI * 2);
+        ctx.arc(nx + 24 * nuvem.escala, nuvem.y - 6 * nuvem.escala, 26 * nuvem.escala, 0, Math.PI * 2);
+        ctx.arc(nx + 48 * nuvem.escala, nuvem.y, 20 * nuvem.escala, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 5. Brasas e faíscas flutuando na atmosfera
+      for (const b of brasas) {
+        ctx.fillStyle = b.cor;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.raio, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ======================================================================
+      // A PARTIR DAQUI OS ELEMENTOS SEGUEM A CÂMERA DO MUNDO (cameraX)
+      // ======================================================================
+      ctx.save();
+      ctx.translate(-cameraX, 0);
+
+      // 6. Plataformas e Chão de Rocha Vulcânica (Basalto/Obsidiana com Magma)
+      for (const plat of plataformas) {
+        if (plat.x + plat.largura < cameraX || plat.x > cameraX + canvas.width) continue;
+
+        // Corpo da rocha vulcânica escura
+        ctx.fillStyle = CONFIG.corRocha;
+        ctx.fillRect(plat.x, plat.y, plat.largura, plat.altura);
+
+        // Crosta superior de lava incandescente
+        ctx.fillStyle = CONFIG.corLava;
+        ctx.fillRect(plat.x, plat.y, plat.largura, 6);
+
+        ctx.fillStyle = CONFIG.corLavaBrilho;
+        ctx.fillRect(plat.x, plat.y, plat.largura, 2);
+
+        // Rachaduras brilhantes de magma ao longo da rocha
+        ctx.strokeStyle = "#dc2626";
+        ctx.lineWidth = 2;
+        const inicioRachadura = Math.max(plat.x + 20, Math.floor(cameraX / 80) * 80);
+        const fimRachadura = Math.min(plat.x + plat.largura - 20, cameraX + canvas.width + 40);
+
+        for (let rx = inicioRachadura; rx < fimRachadura; rx += 80) {
+          ctx.beginPath();
+          ctx.moveTo(rx, plat.y + 6);
+          ctx.lineTo(rx + 12, plat.y + plat.altura * 0.55);
+          ctx.lineTo(rx + 5, plat.y + plat.altura - 3);
+          ctx.stroke();
         }
+      }
 
-        // ==========================================
-        // RENDERIZAÇÃO GRÁFICA (DRAW)
-        // ==========================================
+      // Rochas incandescentes decorativas e placas de distância na estrada
+      for (let px = 40; px < CONFIG.larguraFase; px += 90) {
+        if (px < cameraX - 20 || px > cameraX + canvas.width + 20) continue;
+        ctx.fillStyle = "#292524";
+        ctx.fillRect(px, 422, 12, 6);
+        ctx.fillStyle = "#f97316";
+        ctx.fillRect(px + 38, 433, 14, 4);
+      }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let dist = 500; dist < CONFIG.posicaoChegada; dist += 500) {
+        if (dist < cameraX - 60 || dist > cameraX + canvas.width + 60) continue;
+        ctx.fillStyle = "#57534e";
+        ctx.fillRect(dist, 372, 4, 33);
+        ctx.fillStyle = "#1c1917";
+        ctx.fillRect(dist - 22, 354, 48, 20);
+        ctx.strokeStyle = "#f97316";
+        ctx.strokeRect(dist - 22, 354, 48, 20);
+        ctx.fillStyle = "#facc15";
+        ctx.font = "bold 11px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`${dist}m`, dist + 2, 368);
+        ctx.textAlign = "left";
+      }
 
-            // 1. Prédios da cidade ao fundo
-            ctx.fillStyle = "#152238";
-            for (let i = 0; i < 15; i++) {
-                let bgX = (i * 250) - cameraX * 0.3;
-                ctx.fillRect(bgX, 150, 120, 250);
-            }
+      // 7. Espinhos de cristal/rocha vulcânica com ponta incandescente
+      for (const esp of espinhos) {
+        if (esp.x + esp.largura < cameraX || esp.x > cameraX + canvas.width) continue;
+        const qtdDentes = 3;
+        const larguraDente = esp.largura / qtdDentes;
+        for (let i = 0; i < qtdDentes; i++) {
+          const inicioX = esp.x + i * larguraDente;
+          ctx.fillStyle = CONFIG.corEspinho;
+          ctx.beginPath();
+          ctx.moveTo(inicioX, esp.y + esp.altura);
+          ctx.lineTo(inicioX + larguraDente / 2, esp.y);
+          ctx.lineTo(inicioX + larguraDente, esp.y + esp.altura);
+          ctx.closePath();
+          ctx.fill();
 
-            // 2. Pistas suspensas
-            platforms.forEach(plat => {
-                let drawX = plat.x - cameraX;
-                ctx.fillStyle = "#2c3e50";
-                ctx.fillRect(drawX, plat.y, plat.width, plat.height);
-                ctx.fillStyle = "#ffbd59";
-                ctx.fillRect(drawX, plat.y, plat.width, 4);
-            });
-
-            // 3. Células de Energia
-            coins.forEach(coin => {
-                if (!coin.collected) {
-                    let drawX = coin.x - cameraX;
-                    ctx.beginPath();
-                    ctx.arc(drawX, coin.y, 8, 0, Math.PI * 2);
-                    ctx.fillStyle = "#ffbd59";
-                    ctx.fill();
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = "#ffbd59";
-                    ctx.closePath();
-                    ctx.shadowBlur = 0;
-                }
-            });
-
-            // 4. Obstáculos
-            obstacles.forEach(obs => {
-                let drawX = obs.x - cameraX;
-
-                if (obs.type === 'car') {
-                    ctx.fillStyle = "#9c27b0";
-                    ctx.beginPath();
-                    ctx.roundRect(drawX, obs.y, obs.width, obs.height, [3]);
-                    ctx.fill();
-
-                    ctx.fillStyle = "#111";
-                    ctx.fillRect(drawX + 8, obs.y + 2, 15, 6);
-                } else if (obs.type === 'oil') {
-                    ctx.fillStyle = "#000";
-                    ctx.beginPath();
-                    ctx.ellipse(drawX + obs.width/2, obs.y + obs.height/2, obs.width/2, obs.height/2, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            });
-
-            // 5. Portal de Homologação (Linha de Chegada)
-            let finishDrawX = finishLine.x - cameraX;
-            ctx.fillStyle = "#fff";
-            ctx.fillRect(finishDrawX, 0, 20, canvas.height);
-            ctx.fillStyle = "#000";
-            for (let y = 0; y < canvas.height; y += 20) {
-                ctx.fillRect(finishDrawX + (y % 40 === 0 ? 0 : 10), y, 10, 10);
-            }
-
-            // 6. Jogador
-            player.draw(cameraX);
-
-            // 7. Helicóptero Policial e Holofote iluminando o carro
-            policeHelicopter.draw(cameraX, player);
+          ctx.strokeStyle = "#f97316";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
         }
+      }
 
-        // ==========================================
-        // GAME LOOP (Ciclo de Animação)
-        // ==========================================
+      // 8. Linha de Chegada Quadriculada
+      desenharLinhaChegada();
 
-        function gameLoop() {
-            update();
-            draw();
-            if (!gameOver) {
-                animationId = requestAnimationFrame(gameLoop);
-            }
-        }
+      // 9. Barras de Ouro
+      for (const barra of barrasOuro) {
+        if (barra.coletada) continue;
+        if (barra.x + barra.largura < cameraX || barra.x > cameraX + canvas.width) continue;
+        desenharBarraOuro(barra);
+      }
 
-        initLevel();
-        gameLoop();
-    </script>
+      // 10. Inimigos comuns: Carros Monstros Vermelhos
+      for (const inimigo of inimigos) {
+        if (!inimigo.vivo) continue;
+        if (inimigo.x + inimigo.largura < cameraX || inimigo.x > cameraX + canvas.width) continue;
+        const dirInimigo = inimigo.velX >= 0 ? 1 : -1;
+        desenharCarroMonstro(
+          inimigo.x,
+          inimigo.y,
+          inimigo.largura,
+          inimigo.altura,
+          dirInimigo,
+          inimigo.anguloRoda,
+          true
+        );
+      }
+
+      // 11. Carro Monstro Vilão Gigante no final da pista
+      desenharChefaoGigante();
+
+      // 12. Jogador: Carro Monstro Azul (pisca quando invencível)
+      const visivel = jogador.invencivel === 0 || Math.floor(jogador.invencivel / 6) % 2 === 0;
+      if (visivel) {
+        desenharCarroMonstro(
+          jogador.x,
+          jogador.y,
+          jogador.largura,
+          jogador.altura,
+          jogador.direcao,
+          jogador.anguloRoda,
+          false
+        );
+      }
+
+      // 13. Partículas de impacto, fogo e ouro
+      for (const p of particulas) {
+        ctx.fillStyle = p.cor;
+        ctx.fillRect(p.x, p.y, p.tamanho, p.tamanho);
+      }
+
+      ctx.restore();
+
+      // ======================================================================
+      // ELEMENTOS FIXOS NA TELA (HUD DO CANVAS)
+      // ======================================================================
+      desenharBarraProgresso();
+
+      if (tempoAviso > 0) {
+        const avisoY = jogador.x > 2400 && !chefao.derrotado ? 96 : 38;
+        ctx.fillStyle = "rgba(9, 9, 11, 0.88)";
+        ctx.beginPath();
+        ctx.roundRect(160, avisoY, 480, 32, 8);
+        ctx.fill();
+        ctx.strokeStyle = "#f97316";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = "#facc15";
+        ctx.font = "bold 14px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(mensagemAviso, canvas.width / 2, avisoY + 21);
+        ctx.textAlign = "left";
+      }
+    }
+
+    // ========================================================================
+    // 8. LOOP PRINCIPAL DO JOGO (60 FPS)
+    // ========================================================================
+    function loopJogo() {
+      atualizar();
+      desenhar();
+      requestAnimationFrame(loopJogo);
+    }
+
+    window.onload = function () {
+      iniciarJogo();
+      loopJogo();
+    };
+  </script>
 </body>
 </html>
